@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environment
+agent1env/
+
+# Environment variables
+.env
+
+#Sample papers
+/sample_papers
+
+# macOS
+.DS_Store
