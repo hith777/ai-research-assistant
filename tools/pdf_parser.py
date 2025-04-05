@@ -1,12 +1,9 @@
-from typing import List
+from typing import Optional, List
 import pdfplumber
 class PDFParser:
-    def __init__(self, pdf_path: str = "", parsed_file: "ParsedPDF" = None):
-        self.pdf_path = pdf_path
-        self.parsed_file = parsed_file
 
     @staticmethod
-    def extract_info(pdf_path: str) -> "ParsedPDF":
+    def extract_info(pdf_path: str) -> Optional["ParsedPDF"]:
         """
         Extracts text and (and placeholder figure markers) from a PDF file.
         :param pdf_path: Path to the PDF file.
@@ -22,11 +19,11 @@ class PDFParser:
                         all_text += page_text + "\n"
 
                         # Simulate figure markers
-                        if "Figure" in page_text or "figure" in page_text or "FIGURE" in page_text:
+                        if "figure" in page_text.lower():
                             figure_markers.append(f"Figure detected on Page {i + 1}")
         except Exception as e:
             print(f"Error reading the PDF file {pdf_path}: {e}")
-            return ParsedPDF(all_text, figure_markers)
+            return ParsedPDF(all_text = "", figure_markers = [])
         
 
 

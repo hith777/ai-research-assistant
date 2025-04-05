@@ -1,4 +1,8 @@
 from tools.pdf_parser import PDFParser
+from chunk import Chunk
+from typing import Optional, List
+from tools.text_chunker import TextChunker
+
 class Paper:
     def __init__(self, title: str, authors: list[str], abstract: str, source: str, raw_text: str):
         self._title = title
@@ -6,9 +10,10 @@ class Paper:
         self._abstract = abstract
         self._source = source
         self._raw_text = raw_text
+        self._chunks: Optional[List[Chunk]] = []
     
     @classmethod
-    def from_pdf(cls, pdf_path: str) -> "Paper":
+    def from_pdf(cls, pdf_path: str) -> Optional["Paper"]:
         parsed_file = PDFParser.extract_info(pdf_path)
 
         raw_text = parsed_file.raw_text
@@ -20,6 +25,18 @@ class Paper:
         abstract = input("Enter the abstract of the paper: ")
 
         return cls(title=title, authors=authors, abstract=abstract, source=pdf_path, raw_text=raw_text)
+    
+    def chunk_text(self, max_tokens: int = 500, overlap: int = 50) -> Optional[List[Chunk]]:
+        """
+        Splits the raw text into chunks of a specified maximum token count with overlap.
+        :param max_tokens: The maximum number of tokens per chunk.
+        :param overlap: The number of overlapping tokens between chunks.
+        :return: A list of Chunk objects.
+        """
+        if self._raw_text:
+            self._chunks = TextChunker.chunk_text(self._raw_text, max_tokens, overlap)
+            return self._chunks
+        return None
 
     @property
     def title(self) -> str:
@@ -40,3 +57,7 @@ class Paper:
     @property
     def raw_text(self) -> str:
         return self._raw_text
+
+    @property
+    def chunks(self) -> Optional[List[Chunk]]:
+        return self._chunks

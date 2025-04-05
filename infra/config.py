@@ -4,8 +4,8 @@ import os
 load_dotenv() # load environment variables from .env file
 
 class Config:
-    OPEN_AI_API_KEY = os.getenv("OPEN_AI_API_KEY")
-    OPEN_AI_MODEL = os.getenv("OPEN_AI_MODEL")
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    OPENAI_MODEL = os.getenv("OPENAI_MODEL")
     EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL")
     MAX_TOKENS_PER_REQUEST = int(os.getenv("MAX_TOKENS_PER_REQUEST", "3000"))
     MAX_SUMMARY_TOKENS = int(os.getenv("MAX_SUMMARY_TOKENS", "800"))

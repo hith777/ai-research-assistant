@@ -1,12 +1,13 @@
-from domain.paper import Paper
+from openai import OpenAI
+from infra.config import Config
 
-if __name__ == "__main__":
-    file_path = "sample_papers/example1.pdf"
-    paper = Paper.from_pdf(file_path)
+client = OpenAI(api_key=Config.OPENAI_API_KEY)
 
-    print("\n✅ Paper Loaded!")
-    print("Title:", paper.title)
-    print("Authors:", paper.authors)
-    print("Abstract:", paper.abstract)
-    print("\n--- First 500 characters of paper ---\n")
-    print(paper.raw_text[:500])
+response = client.chat.completions.create(
+    model=Config.OPENAI_MODEL,
+    messages=[
+        {"role": "user", "content": "Summarize this: The mitochondria is the powerhouse of the cell."}
+    ]
+)
+
+print(response.choices[0].message.content)
