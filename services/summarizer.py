@@ -105,28 +105,49 @@ class SummarizerService:
         Returns:
             dict: {
                 "final_summary": str,
-                "total_usage": { "total_tokens": int }
+                "total_usage": {
+                    "prompt_tokens": int,
+                    "completion_tokens": int,
+                    "total_tokens": int
+                }
             }
         """
         if not chunks:
-            return {"final_summary": "", "total_usage": {"total_tokens": 0}}
+            return {
+                "final_summary": "",
+                "total_usage": {
+                    "prompt_tokens": 0,
+                    "completion_tokens": 0,
+                    "total_tokens": 0
+                }
+            }
 
         llm = LLMClient()
         chunk_summaries = []
+        total_prompt_tokens = 0
+        total_completion_tokens = 0
         total_tokens = 0
 
         for chunk in chunks:
             response = SummarizerService.summarize_chunk(chunk, style, llm)
             chunk_summaries.append(response["summary"])
-            total_tokens += response["usage"]["total_tokens"]
+
+            usage = response["usage"]
+            total_prompt_tokens += usage.get("prompt_tokens", 0)
+            total_completion_tokens += usage.get("completion_tokens", 0)
+            total_tokens += usage.get("total_tokens", 0)
 
         prompt = SummarizerService._build_merge_prompt(chunk_summaries, style)
 
         try:
             merge_response = llm.chat_completion(prompt)
             final_summary = merge_response["text"]
-            total_tokens += merge_response["usage"]["total_tokens"]
-            
+            merge_usage = merge_response["usage"]
+
+            total_prompt_tokens += merge_usage.get("prompt_tokens", 0)
+            total_completion_tokens += merge_usage.get("completion_tokens", 0)
+            total_tokens += merge_usage.get("total_tokens", 0)
+
             if not final_summary.strip():
                 print("[WARNING] Final summary is empty.")
             elif len(final_summary.split()) < 20:
@@ -135,16 +156,19 @@ class SummarizerService:
             return {
                 "final_summary": final_summary,
                 "total_usage": {
+                    "prompt_tokens": total_prompt_tokens,
+                    "completion_tokens": total_completion_tokens,
                     "total_tokens": total_tokens
                 }
             }
+
         except Exception as e:
-            print(f"[ERROR] failed to summarize the paper: {e}")
-            return {"final_summary": "", "total_usage": {"total_tokens": 0}}
-        
-
-        
-
-
-        
-        
+            print(f"[ERROR] Failed to summarize the paper: {e}")
+            return {
+                "final_summary": "",
+                "total_usage": {
+                    "prompt_tokens": total_prompt_tokens,
+                    "completion_tokens": total_completion_tokens,
+                    "total_tokens": total_tokens
+                }
+            }
