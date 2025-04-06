@@ -31,7 +31,7 @@ class SummarizerService:
         return f"{instruction}\n\n{chunk.text.strip()}"
     
     @staticmethod
-    def _build_merge_prompt(chunk_summaries: Optional[List[Chunk]], style: str = "default") -> str:
+    def _build_merge_prompt(chunk_summaries: List[str], style: str = "default") -> str:
         """
         Builds a prompt to instruct the LLM to merge multiple summaries into a single summary.
 
@@ -44,7 +44,10 @@ class SummarizerService:
         if not chunk_summaries:
             return ""
         
-        combined_summaries = "\n\n".join([f"Section {i+1} Summary:\n{chunk.text.strip()}" for i, chunk in enumerate(chunk_summaries)])
+        combined_summaries = "\n\n".join([
+        f"Section {i+1} Summary:\n{summary.strip()}"
+        for i, summary in enumerate(chunk_summaries)
+        ])
 
         instruction = "Generate a single, clear, and concise overall summary of the entire paper:"
 
@@ -59,7 +62,7 @@ class SummarizerService:
         return f"You are reading a research paper. Below are summaries of its sections.\n{instruction}\n\n{combined_summaries}"
 
     @staticmethod
-    def summarize_chunk(chunk: Optional[Chunk], style: str = "default", llm: Optional[LLMClient] = None) -> str:
+    def summarize_chunk(chunk: Optional[Chunk], style: str = "default", llm: Optional[LLMClient] = None) -> dict:
         """
         Summarizes a given chunk of text using the LLM client. Map step in the pipeline.
         
@@ -67,22 +70,30 @@ class SummarizerService:
             chunk (Chunk): The chunk to summarize.
         
         Returns:
-            str: The summarized text.
+            dict: {
+                "summary": str,
+                "usage": dict
+            }
         """
         if not chunk:
-            return ""
+            return {"summary": "", "usage": {"total_tokens": 0}}
 
         llm = llm or LLMClient()
         prompt = SummarizerService._build_summary_prompt(chunk, style)
         
         try:
-            return llm.chat_completion(prompt)
+            response = llm.chat_completion(prompt)
+
+            return {
+                "summary": response["text"],
+                "usage": response["usage"]
+            }
         except Exception as e:
             print(f"[ERROR] failed to summarize the chunk: {e}")
-            return ""
+            return {"summary": "", "usage": {"total_tokens": 0}}
 
     @staticmethod
-    def summarize_paper(chunks: Optional[List[Chunk]], style: str = "default") -> str:
+    def summarize_paper(chunks: Optional[List[Chunk]], style: str = "default") -> dict:
         """
         Generates a final, merged summary for a paper by summarizing all chunks
         and combining them into a single cohesive summary.
@@ -92,21 +103,44 @@ class SummarizerService:
             style (str): The style of summarization ('default', 'short', 'layman', etc.).
 
         Returns:
-            str: A complete summary of the paper.
+            dict: {
+                "final_summary": str,
+                "total_usage": { "total_tokens": int }
+            }
         """
         if not chunks:
-            return ""
+            return {"final_summary": "", "total_usage": {"total_tokens": 0}}
 
         llm = LLMClient()
-        chunk_summaries = [SummarizerService.summarize_chunk(chunk, style, llm) for chunk in chunks]
+        chunk_summaries = []
+        total_tokens = 0
+
+        for chunk in chunks:
+            response = SummarizerService.summarize_chunk(chunk, style, llm)
+            chunk_summaries.append(response["summary"])
+            total_tokens += response["usage"]["total_tokens"]
 
         prompt = SummarizerService._build_merge_prompt(chunk_summaries, style)
 
         try:
-            return llm.chat_completion(prompt)
+            merge_response = llm.chat_completion(prompt)
+            final_summary = merge_response["text"]
+            total_tokens += merge_response["usage"]["total_tokens"]
+            
+            if not final_summary.strip():
+                print("[WARNING] Final summary is empty.")
+            elif len(final_summary.split()) < 20:
+                print(f"[WARNING] Final summary seems very short ({len(final_summary.split())} words):\n{final_summary}")
+
+            return {
+                "final_summary": final_summary,
+                "total_usage": {
+                    "total_tokens": total_tokens
+                }
+            }
         except Exception as e:
             print(f"[ERROR] failed to summarize the paper: {e}")
-            return ""
+            return {"final_summary": "", "total_usage": {"total_tokens": 0}}
         
 
         

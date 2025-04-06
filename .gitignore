@@ -6,11 +6,11 @@ __pycache__/
 # Virtual environment
 agent1env/
 
+#docs
+docs/
+
 # Environment variables
 .env
-
-#Sample papers
-/sample_papers
 
 # macOS
 .DS_Store

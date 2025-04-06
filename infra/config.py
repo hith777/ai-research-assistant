@@ -4,6 +4,7 @@ import os
 load_dotenv() # load environment variables from .env file
 
 class Config:
+    LLM_PROVIDER = os.getenv("LLM_PROVIDER")
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
     OPENAI_MODEL = os.getenv("OPENAI_MODEL")
     EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL")

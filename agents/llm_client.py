@@ -14,15 +14,22 @@ class LLMClient:
 
         raise NotImplementedError(f"LLM provider '{self._provider}' is not supported yet.")
 
-    def chat_completion(self, prompt: str):
+    def chat_completion(self, prompt: str) -> dict:
         """
-        Sends a prompt to the current LLM provider and returns the response.
+        Sends a prompt to the current LLM provider and returns the response text along with token usage.
 
         Args:
             prompt (str): The prompt to send to the language model.
 
         Returns:
-            str: The generated response text.
+            dict: {
+                "text": str,  # The generated message
+                "usage": {
+                    "prompt_tokens": int,
+                    "completion_tokens": int,
+                    "total_tokens": int
+                }
+            }
         """
         if self._provider.lower() == "openai":
             try:
@@ -33,10 +40,27 @@ class LLMClient:
                     ],
                     temperature=0.3,
                 )
-                return response.choices[0].message.content.strip()
+                message_text = response.choices[0].message.content.strip()
+                usage = response.usage
+
+                return {
+                    "text": message_text,
+                    "usage": {
+                        "prompt_tokens": usage.prompt_tokens,
+                        "completion_tokens": usage.completion_tokens,
+                        "total_tokens": usage.total_tokens
+                    }
+                }
             except Exception as e:
                 print(f"[ERROR] OpenAI chat completion failed: {e}")
-                return ""
+                return {
+                    "text": "",
+                    "usage": {
+                        "prompt_tokens": 0,
+                        "completion_tokens": 0,
+                        "total_tokens": 0
+                    }
+                }
             
         raise NotImplementedError(f"chat_completion is not implemented for provider '{self._provider}'")
 
