@@ -1,16 +1,4 @@
-Perfect. Here's a **comprehensive and professional `README.md`** for your project that includes:
-
-- Project purpose  
-- Features with version history  
-- Setup instructions  
-- How to use (CLI + Assistant)  
-- Architectural overview  
-- Folder structure  
-- Future roadmap
-
----
-
-### ✅ `README.md`
+### `README.md`
 
 ```markdown
 # AI Research Assistant
