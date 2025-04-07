@@ -3,8 +3,8 @@ from domain.chunk import Chunk
 from typing import List, Optional
 from agents.llm_client import LLMClient
 
-class SummarizerService:
 
+class SummarizerService:
     @staticmethod
     def _build_summary_prompt(chunk: Optional[Chunk], style: str = "default") -> str:
         """
@@ -12,13 +12,14 @@ class SummarizerService:
 
         Args:
             chunk (Chunk): The chunk of text to summarize.
+            style (str): The style of summarization ('default', 'short', 'layman', 'technical').
 
         Returns:
-            str: A well-structured prompt for the LLM.
+            str: A formatted prompt for the LLM.
         """
         if not chunk:
             return ""
-        
+
         instruction = "Summarize the following part of a research paper clearly and concisely:"
 
         if style == "short":
@@ -29,24 +30,27 @@ class SummarizerService:
             instruction = "Summarize this section with a focus on technical accuracy:"
 
         return f"{instruction}\n\n{chunk.text.strip()}"
-    
+
     @staticmethod
     def _build_merge_prompt(chunk_summaries: List[str], style: str = "default") -> str:
         """
-        Builds a prompt to instruct the LLM to merge multiple summaries into a single summary.
+        Builds a prompt to instruct the LLM to merge multiple chunk summaries
+        into a cohesive overall summary of the paper.
 
         Args:
-            chunk_summaries (List[Chunk]): The list of chunk summaries to merge.
+            chunk_summaries (List[str]): A list of individual chunk summaries.
+            style (str): The desired style of the final paper summary.
 
         Returns:
             str: A well-structured prompt for the LLM.
         """
         if not chunk_summaries:
             return ""
-        
+
+        # Combine all chunk summaries with section labels
         combined_summaries = "\n\n".join([
-        f"Section {i+1} Summary:\n{summary.strip()}"
-        for i, summary in enumerate(chunk_summaries)
+            f"Section {i+1} Summary:\n{summary.strip()}"
+            for i, summary in enumerate(chunk_summaries)
         ])
 
         instruction = "Generate a single, clear, and concise overall summary of the entire paper:"
@@ -58,21 +62,29 @@ class SummarizerService:
         elif style == "layman":
             instruction = "Summarize the entire paper in simple, layman-friendly language."
 
-
-        return f"You are reading a research paper. Below are summaries of its sections.\n{instruction}\n\n{combined_summaries}"
+        return (
+            "You are reading a research paper. Below are summaries of its sections.\n"
+            f"{instruction}\n\n{combined_summaries}"
+        )
 
     @staticmethod
     def summarize_chunk(chunk: Optional[Chunk], style: str = "default", llm: Optional[LLMClient] = None) -> dict:
         """
-        Summarizes a given chunk of text using the LLM client. Map step in the pipeline.
-        
+        Summarizes a single chunk using the LLM.
+
         Args:
-            chunk (Chunk): The chunk to summarize.
-        
+            chunk (Chunk): The text chunk to summarize.
+            style (str): The desired summary style.
+            llm (LLMClient, optional): An existing LLMClient instance.
+
         Returns:
             dict: {
                 "summary": str,
-                "usage": dict
+                "usage": {
+                    "prompt_tokens": int,
+                    "completion_tokens": int,
+                    "total_tokens": int
+                }
             }
         """
         if not chunk:
@@ -80,27 +92,30 @@ class SummarizerService:
 
         llm = llm or LLMClient()
         prompt = SummarizerService._build_summary_prompt(chunk, style)
-        
+
         try:
             response = llm.chat_completion(prompt)
-
             return {
                 "summary": response["text"],
                 "usage": response["usage"]
             }
         except Exception as e:
-            print(f"[ERROR] failed to summarize the chunk: {e}")
-            return {"summary": "", "usage": {"total_tokens": 0}}
+            print(f"[ERROR] Failed to summarize chunk: {e}")
+            return {
+                "summary": "",
+                "usage": {"total_tokens": 0}
+            }
 
     @staticmethod
     def summarize_paper(chunks: Optional[List[Chunk]], style: str = "default") -> dict:
         """
-        Generates a final, merged summary for a paper by summarizing all chunks
-        and combining them into a single cohesive summary.
+        Summarizes the entire paper by:
+        1. Summarizing each chunk (in default style for consistency),
+        2. Merging those summaries into a final summary with the requested style.
 
         Args:
             chunks (List[Chunk]): List of text chunks to summarize.
-            style (str): The style of summarization ('default', 'short', 'layman', etc.).
+            style (str): Final summary style ('default', 'short', 'layman', etc.).
 
         Returns:
             dict: {
@@ -129,7 +144,8 @@ class SummarizerService:
         total_tokens = 0
 
         for chunk in chunks:
-            response = SummarizerService.summarize_chunk(chunk, style, llm)
+            # Always summarize chunks in 'default' style for clarity and accuracy
+            response = SummarizerService.summarize_chunk(chunk, "default", llm)
             chunk_summaries.append(response["summary"])
 
             usage = response["usage"]
@@ -137,6 +153,7 @@ class SummarizerService:
             total_completion_tokens += usage.get("completion_tokens", 0)
             total_tokens += usage.get("total_tokens", 0)
 
+        # Build merge prompt in final desired style
         prompt = SummarizerService._build_merge_prompt(chunk_summaries, style)
 
         try:
@@ -144,10 +161,12 @@ class SummarizerService:
             final_summary = merge_response["text"]
             merge_usage = merge_response["usage"]
 
+            # Add merge token usage
             total_prompt_tokens += merge_usage.get("prompt_tokens", 0)
             total_completion_tokens += merge_usage.get("completion_tokens", 0)
             total_tokens += merge_usage.get("total_tokens", 0)
 
+            # Validate final result
             if not final_summary.strip():
                 print("[WARNING] Final summary is empty.")
             elif len(final_summary.split()) < 20:

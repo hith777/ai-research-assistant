@@ -48,6 +48,7 @@ class ThreadExecutor:
         from tools.cost_tracker import CostTracker
         from tools.cache_manager import CacheManager
         from infra.config import Config
+        import re
 
         tool_calls = run.required_action.submit_tool_outputs.tool_calls
         outputs = []
@@ -58,7 +59,15 @@ class ThreadExecutor:
 
             if func_name == "summarize_pdf":
                 path = args["path"]
-                style = "default"  # Later, this could be passed in dynamically
+                # Extract optional style from message if included like: [style=layman]
+                style = "default"
+                messages = openai.beta.threads.messages.list(thread_id=self.thread.id).data
+                for msg in messages:
+                    if msg.role == "user" and "style=" in msg.content[0].text.value:
+                        match = re.search(r"style=(\w+)", msg.content[0].text.value)
+                        if match:
+                            style = match.group(1).strip().lower()
+
 
                 print(f"\n📄 Summarizing file: {path}")
                 file_hash = CacheManager.get_file_hash(path)
@@ -114,21 +123,21 @@ class ThreadExecutor:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run assistant thread to summarize papers.")
     parser.add_argument("--file", type=str, help="Path to PDF to summarize")
-    parser.add_argument("--message", type=str, help="Custom message to send")
+    parser.add_argument("--message", type=str, help="Custom message to send instead of summary")
+    parser.add_argument("--style", type=str, default="default", help="Summary style (default, layman, short, etc.)")
 
     args = parser.parse_args()
     tools = AssistantRegistrar.register_tools()
     assistant_id = AssistantRegistrar.get_or_create_assistant(Config.OPENAI_MODEL, tools)
-
     executor = ThreadExecutor(assistant_id)
 
-    # Build input message
+    # Build message
     if args.file:
-        message = f"Summarize this paper: {args.file}"
+        message = f"Summarize this paper: {args.file} [style={args.style}]"
     elif args.message:
         message = args.message
     else:
-        message = "Summarize this paper: docs/sample_test_paper.pdf"
+        message = "Summarize this paper: sample_papers/sample_test_paper.pdf"
 
     executor.send_message(message)
     run = executor.run()
@@ -137,3 +146,4 @@ if __name__ == "__main__":
 
     print("\n🧠 Assistant Reply:\n")
     print(response)
+
