@@ -5,7 +5,6 @@
 
 An intelligent agent-based assistant designed to read, summarize, and compare research papers using LLMs like OpenAI's GPT. It supports customizable summary styles, cost tracking, chunk compression, caching, and both CLI and OpenAI Assistant integration.
 
----
 
 ## Features
 
@@ -41,7 +40,6 @@ An intelligent agent-based assistant designed to read, summarize, and compare re
 - Logging suppression for `pdfminer` warnings
 - Cleaner thread execution and assistant replies
 
----
 
 ## Setup
 
