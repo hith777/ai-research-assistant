@@ -22,6 +22,32 @@ class AssistantRegistrar:
                         "required": ["path"]
                     }
                 }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "compare_papers",
+                    "description": "Compares two research papers and returns key similarities and differences.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "file_path_1": {
+                                "type": "string",
+                                "description": "Path to the first PDF"
+                            },
+                            "file_path_2": {
+                                "type": "string",
+                                "description": "Path to the second PDF"
+                            },
+                            "style": {
+                                "type": "string",
+                                "description": "Style of the comparison (default, layman, detailed)",
+                                "default": "default"
+                            }
+                        },
+                        "required": ["file_path_1", "file_path_2"]
+                    }
+                }
             }
         ]
     
@@ -47,21 +73,24 @@ class AssistantRegistrar:
         except FileNotFoundError:
             print("⚠️ Assistant ID not found. Creating a new assistant...")
 
-            openai.api_key = Config.OPENAI_API_KEY
             assistant = openai.beta.assistants.create(
-                name="Paper Summarizer",
-                instructions="You summarize research papers using a registered summarize_pdf function.",
+                name="Research Paper Assistant",
+                instructions=(
+                    "You are a research assistant that helps with analyzing academic papers. "
+                    "You can summarize research papers in different styles and compare two papers "
+                    "based on their methods, goals, and findings using the registered functions. "
+                    "Use the tools available to complete the user's request accurately and concisely."
+                ),
                 tools=tools,
                 model=model
             )
+
 
             with open(".assistant_id", "w") as f:
                 f.write(assistant.id)
 
             print("Assistant created and saved.")
             return assistant.id
-
-
 
 
 # CLI entry point

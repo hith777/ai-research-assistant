@@ -25,15 +25,18 @@ class ThreadExecutor:
         )
 
     def wait_for_completion(self, run_id: str):
+        tool_handled = False
+
         while True:
             run = openai.beta.threads.runs.retrieve(thread_id=self.thread.id, run_id=run_id)
 
             if run.status == "completed":
                 return run
 
-            elif run.status == "requires_action":
+            elif run.status == "requires_action" and not tool_handled:
                 self.handle_tool_calls(run)
-                continue
+                tool_handled = True  # Prevents re-processing
+                time.sleep(1)        # Wait briefly before next run check
 
             elif run.status in {"queued", "in_progress"}:
                 time.sleep(1)
@@ -42,13 +45,14 @@ class ThreadExecutor:
             else:
                 raise Exception(f"[ERROR] Unexpected run status: {run.status}")
 
+
     def handle_tool_calls(self, run):
         from services.summarizer import SummarizerService
         from domain.paper import Paper
         from tools.cost_tracker import CostTracker
         from tools.cache_manager import CacheManager
         from infra.config import Config
-        import re
+        from utils.message_utils import extract_style_from_messages
 
         tool_calls = run.required_action.submit_tool_outputs.tool_calls
         outputs = []
@@ -60,13 +64,7 @@ class ThreadExecutor:
             if func_name == "summarize_pdf":
                 path = args["path"]
                 # Extract optional style from message if included like: [style=layman]
-                style = "default"
-                messages = openai.beta.threads.messages.list(thread_id=self.thread.id).data
-                for msg in messages:
-                    if msg.role == "user" and "style=" in msg.content[0].text.value:
-                        match = re.search(r"style=(\w+)", msg.content[0].text.value)
-                        if match:
-                            style = match.group(1).strip().lower()
+                style = args.get("style") or extract_style_from_messages(self.thread.id)
 
 
                 print(f"\n📄 Summarizing file: {path}")
@@ -102,6 +100,41 @@ class ThreadExecutor:
                     "tool_call_id": tool_call.id,
                     "output": result["final_summary"]
                 })
+            
+            elif func_name == "compare_papers":
+                path1 = args["file_path_1"]
+                path2 = args["file_path_2"]
+                style = args.get("style") or extract_style_from_messages(self.thread.id)
+
+
+                print(f"\n Comparing files:\n- {path1}\n- {path2}")
+                combined_key = CacheManager.get_combined_hash(path1, path2)
+
+                # Check cache
+                if CacheManager.is_cached(combined_key, style):
+                    print("Loaded comparison from cache!")
+                    result = CacheManager.load_cached_summary(combined_key, style)
+                else:
+                    result = SummarizerService.compare_papers(path1, path2, style)
+                    CacheManager.save_summary(combined_key, style, result)
+                    print("Comparison saved to cache.")
+
+                usage = result.get("total_usage", {})
+                prompt_tokens = usage.get("prompt_tokens", 0)
+                completion_tokens = usage.get("completion_tokens", 0)
+                total_tokens = usage.get("total_tokens", 0)
+
+                model = Config.OPENAI_MODEL
+                cost = CostTracker.estimate_cost(model, prompt_tokens, completion_tokens)
+
+                print(f"📊 Token Usage: {total_tokens} tokens")
+                print(f"💸 Estimated Cost ({model}): ${cost:.6f}")
+
+                outputs.append({
+                    "tool_call_id": tool_call.id,
+                    "output": result["comparison"]
+                })
+
 
         openai.beta.threads.runs.submit_tool_outputs(
             thread_id=self.thread.id,
@@ -119,26 +152,34 @@ class ThreadExecutor:
         return None
 
 
-# 🎯 CLI Entry Point
+# CLI Entry Point
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run assistant thread to summarize papers.")
-    parser.add_argument("--file", type=str, help="Path to PDF to summarize")
-    parser.add_argument("--message", type=str, help="Custom message to send instead of summary")
-    parser.add_argument("--style", type=str, default="default", help="Summary style (default, layman, short, etc.)")
+    parser = argparse.ArgumentParser(description="Run assistant thread to summarize or compare papers.")
+    parser.add_argument("--file", type=str, help="Path to PDF to summarize or compare (required).")
+    parser.add_argument("--file2", type=str, help="Second PDF for comparison (if running compare_papers).")
+    parser.add_argument("--style", type=str, default="default", help="Style for summarization or comparison.")
+    parser.add_argument("--message", type=str, help="Optional custom message to send to the assistant.")
 
     args = parser.parse_args()
+
     tools = AssistantRegistrar.register_tools()
     assistant_id = AssistantRegistrar.get_or_create_assistant(Config.OPENAI_MODEL, tools)
     executor = ThreadExecutor(assistant_id)
 
     # Build message
-    if args.file:
-        message = f"Summarize this paper: {args.file} [style={args.style}]"
-    elif args.message:
+    if args.message:
         message = args.message
+
+    elif args.file and args.file2:
+        message = f"Compare these two papers: {args.file} and {args.file2} [style={args.style}]"
+
+    elif args.file:
+        message = f"Summarize this paper: {args.file} [style={args.style}]"
+
     else:
         message = "Summarize this paper: sample_papers/sample_test_paper.pdf"
 
+    # Run assistant thread
     executor.send_message(message)
     run = executor.run()
     executor.wait_for_completion(run.id)
@@ -146,4 +187,5 @@ if __name__ == "__main__":
 
     print("\n🧠 Assistant Reply:\n")
     print(response)
+
 

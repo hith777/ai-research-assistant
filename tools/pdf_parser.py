@@ -1,5 +1,9 @@
 from typing import Optional, List
 import pdfplumber
+import logging
+
+logging.getLogger("pdfminer").setLevel(logging.ERROR)
+
 class PDFParser:
 
     @staticmethod
@@ -15,6 +19,7 @@ class PDFParser:
             with pdfplumber.open(pdf_path) as pdf:
                 for i, page in enumerate(pdf.pages):
                     page_text = page.extract_text()
+
                     if page_text:
                         all_text += page_text + "\n"
 

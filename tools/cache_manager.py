@@ -30,6 +30,15 @@ class CacheManager:
         Builds the full cache file path for a given file hash and style.
         """
         return os.path.join(CACHE_DIR, f"{file_hash}__{style}.json")
+    
+    @staticmethod
+    def get_combined_hash(file_path1: str, file_path2: str) -> str:
+        """
+        Generates a combined hash for two files.
+        """
+        hash1 = CacheManager.get_file_hash(file_path1)
+        hash2 = CacheManager.get_file_hash(file_path2)
+        return "__".join(sorted([hash1, hash2]))    
 
     @staticmethod
     def is_cached(file_hash: str, style: str) -> bool:

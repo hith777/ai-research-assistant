@@ -30,42 +30,58 @@ class SummarizerService:
             instruction = "Summarize this section with a focus on technical accuracy:"
 
         return f"{instruction}\n\n{chunk.text.strip()}"
-
+    
     @staticmethod
-    def _build_merge_prompt(chunk_summaries: List[str], style: str = "default") -> str:
+    def _build_compression_prompt(text: str) -> str:
         """
-        Builds a prompt to instruct the LLM to merge multiple chunk summaries
-        into a cohesive overall summary of the paper.
+        Builds a prompt to compress a section of a research paper without losing technical details.
 
         Args:
-            chunk_summaries (List[str]): A list of individual chunk summaries.
-            style (str): The desired style of the final paper summary.
+            text (str): The raw text from a chunk.
 
         Returns:
-            str: A well-structured prompt for the LLM.
+            str: A compression prompt for the LLM.
         """
-        if not chunk_summaries:
-            return ""
-
-        # Combine all chunk summaries with section labels
-        combined_summaries = "\n\n".join([
-            f"Section {i+1} Summary:\n{summary.strip()}"
-            for i, summary in enumerate(chunk_summaries)
-        ])
-
-        instruction = "Generate a single, clear, and concise overall summary of the entire paper:"
-
-        if style == "short":
-            instruction = "Generate a brief, 1-2 sentence summary of the entire paper."
-        elif style == "detailed":
-            instruction = "Generate a thorough, paragraph-level summary of the entire paper."
-        elif style == "layman":
-            instruction = "Summarize the entire paper in simple, layman-friendly language."
-
         return (
-            "You are reading a research paper. Below are summaries of its sections.\n"
-            f"{instruction}\n\n{combined_summaries}"
+            "You are compressing a section of a research paper. "
+            "Rewrite the section more concisely, but preserve all technical detail, key terminology, and context.\n\n"
+            f"{text.strip()}"
         )
+
+    @staticmethod
+    def _build_compressed_summary_prompt(compressed_text: str, style: str = "default") -> str:
+        """
+        Builds a prompt to summarize the full compressed version of a research paper.
+
+        Args:
+            compressed_text (str): The full compressed representation of the paper.
+            style (str): The style of summarization ('default', 'short', 'layman', 'detailed').
+
+        Returns:
+            str: A prompt to instruct the LLM to generate the final summary.
+        """
+        if style == "short":
+            instruction = (
+                "You are given a compressed version of a research paper. "
+                "Summarize it briefly in 2-3 sentences."
+            )
+        elif style == "layman":
+            instruction = (
+                "You are given a compressed version of a research paper. "
+                "Explain it in simple, layman-friendly language so anyone can understand it."
+            )
+        elif style == "detailed":
+            instruction = (
+                "You are given a compressed version of a research paper. "
+                "Provide a thorough, paragraph-level summary that captures the structure and technical depth."
+            )
+        else:
+            instruction = (
+                "You are given a compressed version of a research paper. "
+                "Summarize it clearly and concisely while preserving its key ideas and structure."
+            )
+
+        return f"{instruction}\n\n{compressed_text.strip()}"
 
     @staticmethod
     def summarize_chunk(chunk: Optional[Chunk], style: str = "default", llm: Optional[LLMClient] = None) -> dict:
@@ -107,15 +123,16 @@ class SummarizerService:
             }
 
     @staticmethod
-    def summarize_paper(chunks: Optional[List[Chunk]], style: str = "default") -> dict:
+    def summarize_paper(chunks: Optional[List[Chunk]], style: str = "default", llm: Optional[LLMClient] = None) -> dict:
         """
         Summarizes the entire paper by:
-        1. Summarizing each chunk (in default style for consistency),
-        2. Merging those summaries into a final summary with the requested style.
+        1. Compressing all chunks (preserving technical accuracy),
+        2. Generating a styled summary from the full compressed content.
 
         Args:
-            chunks (List[Chunk]): List of text chunks to summarize.
+            chunks (List[Chunk]): The list of paper chunks.
             style (str): Final summary style ('default', 'short', 'layman', etc.).
+            llm (LLMClient, optional): Optional shared LLMClient instance.
 
         Returns:
             dict: {
@@ -137,57 +154,163 @@ class SummarizerService:
                 }
             }
 
-        llm = LLMClient()
-        chunk_summaries = []
-        total_prompt_tokens = 0
-        total_completion_tokens = 0
-        total_tokens = 0
+        llm = llm or LLMClient()
 
-        for chunk in chunks:
-            # Always summarize chunks in 'default' style for clarity and accuracy
-            response = SummarizerService.summarize_chunk(chunk, "default", llm)
-            chunk_summaries.append(response["summary"])
+        #Step 1: Compress the full paper
+        compression = SummarizerService.compress_paper(chunks, llm)
+        compressed_text = compression["compressed_text"]
+        compression_usage = compression["usage"]
 
-            usage = response["usage"]
-            total_prompt_tokens += usage.get("prompt_tokens", 0)
-            total_completion_tokens += usage.get("completion_tokens", 0)
-            total_tokens += usage.get("total_tokens", 0)
 
-        # Build merge prompt in final desired style
-        prompt = SummarizerService._build_merge_prompt(chunk_summaries, style)
+        #Step 2: Build final prompt from the compressed version
+        final_prompt = SummarizerService._build_compressed_summary_prompt(compressed_text, style)
 
         try:
-            merge_response = llm.chat_completion(prompt)
-            final_summary = merge_response["text"]
-            merge_usage = merge_response["usage"]
+            summary_response = llm.chat_completion(final_prompt)
+            summary_usage = summary_response["usage"]
 
-            # Add merge token usage
-            total_prompt_tokens += merge_usage.get("prompt_tokens", 0)
-            total_completion_tokens += merge_usage.get("completion_tokens", 0)
-            total_tokens += merge_usage.get("total_tokens", 0)
-
-            # Validate final result
-            if not final_summary.strip():
-                print("[WARNING] Final summary is empty.")
-            elif len(final_summary.split()) < 20:
-                print(f"[WARNING] Final summary seems very short ({len(final_summary.split())} words):\n{final_summary}")
 
             return {
-                "final_summary": final_summary,
+                "final_summary": summary_response["text"],
                 "total_usage": {
-                    "prompt_tokens": total_prompt_tokens,
-                    "completion_tokens": total_completion_tokens,
-                    "total_tokens": total_tokens
+                    "prompt_tokens": compression_usage["prompt_tokens"] + summary_usage["prompt_tokens"],
+                    "completion_tokens": compression_usage["completion_tokens"] + summary_usage["completion_tokens"],
+                    "total_tokens": compression_usage["total_tokens"] + summary_usage["total_tokens"],
                 }
             }
 
         except Exception as e:
-            print(f"[ERROR] Failed to summarize the paper: {e}")
+            print(f"[ERROR] Failed to summarize compressed paper: {e}")
             return {
                 "final_summary": "",
                 "total_usage": {
-                    "prompt_tokens": total_prompt_tokens,
-                    "completion_tokens": total_completion_tokens,
-                    "total_tokens": total_tokens
+                    "prompt_tokens": 0,
+                    "completion_tokens": 0,
+                    "total_tokens": 0
                 }
             }
+
+    @staticmethod
+    def compress_paper(chunks: List[Chunk], llm: Optional[LLMClient] = None) -> dict:
+        """
+        Compresses all chunks of a paper into a single technical representation.
+
+        Args:
+            chunks (List[Chunk]): The full set of paper chunks.
+            llm (LLMClient, optional): Reusable LLM client instance.
+
+        Returns:
+            dict: {
+                "compressed_text": str,
+                "usage": {
+                    "prompt_tokens": int,
+                    "completion_tokens": int,
+                    "total_tokens": int
+                }
+            }
+        """
+        if not chunks:
+            return {"compressed_text": "", "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}}
+
+        llm = llm or LLMClient()
+        compressed_sections = []
+        total_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
+
+        for chunk in chunks:
+            prompt = SummarizerService._build_compression_prompt(chunk.text)
+            try:
+                response = llm.chat_completion(prompt)
+                compressed_sections.append(response["text"])
+
+                usage = response["usage"]
+                total_usage["prompt_tokens"] += usage.get("prompt_tokens", 0)
+                total_usage["completion_tokens"] += usage.get("completion_tokens", 0)
+                total_usage["total_tokens"] += usage.get("total_tokens", 0)
+
+            except Exception as e:
+                print(f"[ERROR] Failed to compress chunk: {e}")
+
+        return {
+            "compressed_text": "\n\n".join(compressed_sections),
+            "usage": total_usage
+        }
+
+
+    
+    @staticmethod
+    def compare_papers(path1: str, path2: str, style: str = "default", llm: Optional[LLMClient] = None) -> dict:
+        """
+        Compares two research papers by compressing their full content
+        and generating a comparison based on goals, methods, and conclusions.
+
+        Args:
+            path1 (str): Path to the first PDF.
+            path2 (str): Path to the second PDF.
+            style (str): Tone of the final comparison (default, layman, etc.)
+            llm (LLMClient, optional): Reusable LLM client.
+
+        Returns:
+            dict: {
+                "comparison": str,
+                "total_usage": {
+                    "prompt_tokens": int,
+                    "completion_tokens": int,
+                    "total_tokens": int
+                }
+            }
+        """
+        try:
+            llm = llm or LLMClient()
+            paper1 = Paper.from_pdf(path1)
+            paper2 = Paper.from_pdf(path2)
+
+            paper1.chunk_text()
+            paper2.chunk_text()
+
+            # ✅ Compress both papers
+            compressed1 = SummarizerService.compress_paper(paper1.chunks, llm)
+            compressed2 = SummarizerService.compress_paper(paper2.chunks, llm)
+
+            total_usage = {
+                "prompt_tokens": 0,
+                "completion_tokens": 0,
+                "total_tokens": 0,
+            }
+
+            total_usage["prompt_tokens"] += compressed1["usage"]["prompt_tokens"]
+            total_usage["completion_tokens"] += compressed1["usage"]["completion_tokens"]
+            total_usage["total_tokens"] += compressed1["usage"]["total_tokens"]
+
+            total_usage["prompt_tokens"] += compressed2["usage"]["prompt_tokens"]
+            total_usage["completion_tokens"] += compressed2["usage"]["completion_tokens"]
+            total_usage["total_tokens"] += compressed2["usage"]["total_tokens"]
+
+            comparison_prompt = (
+                f"You are comparing two full research papers based on their content below.\n\n"
+                f"Paper 1:\n{compressed1['compressed_text']}\n\n"
+                f"Paper 2:\n{compressed2['compressed_text']}\n\n"
+                f"Write a clear comparison covering research focus, methods, technical approach, and conclusions. "
+                f"Point out both similarities and differences. Use a {style} tone."
+            )
+
+            response = llm.chat_completion(comparison_prompt)
+            total_usage["prompt_tokens"] += response["usage"]["prompt_tokens"]
+            total_usage["completion_tokens"] += response["usage"]["completion_tokens"]
+            total_usage["total_tokens"] += response["usage"]["total_tokens"]
+
+            return {
+                "comparison": response["text"],
+                "total_usage": total_usage
+            }
+
+        except Exception as e:
+            print(f"[ERROR] Failed to compare papers: {e}")
+            return {
+                "comparison": "Comparison failed due to an internal error.",
+                "total_usage": {
+                    "prompt_tokens": 0,
+                    "completion_tokens": 0,
+                    "total_tokens": 0
+                }
+            }
+
