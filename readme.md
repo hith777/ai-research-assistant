@@ -1,6 +1,5 @@
 ### `README.md`
 
-```markdown
 # AI Research Assistant
 
 An intelligent agent-based assistant designed to read, summarize, and compare research papers using LLMs like OpenAI's GPT. It supports customizable summary styles, cost tracking, chunk compression, caching, and both CLI and OpenAI Assistant integration.
