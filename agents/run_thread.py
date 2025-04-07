@@ -46,6 +46,7 @@ class ThreadExecutor:
         from services.summarizer import SummarizerService
         from domain.paper import Paper
         from tools.cost_tracker import CostTracker
+        from tools.cache_manager import CacheManager
         from infra.config import Config
 
         tool_calls = run.required_action.submit_tool_outputs.tool_calls
@@ -57,16 +58,30 @@ class ThreadExecutor:
 
             if func_name == "summarize_pdf":
                 path = args["path"]
+                style = "default"  # Later, this could be passed in dynamically
 
                 print(f"\n📄 Summarizing file: {path}")
-                paper = Paper.from_pdf(path)
-                paper.chunk_text()
-                result = SummarizerService.summarize_paper(paper.chunks, style="default")
+                file_hash = CacheManager.get_file_hash(path)
 
+                # 🔍 Check cache
+                if CacheManager.is_cached(file_hash, style):
+                    print("✅ Loaded summary from cache!")
+                    result = CacheManager.load_cached_summary(file_hash, style)
+                else:
+                    # ⏳ Process normally
+                    paper = Paper.from_pdf(path)
+                    paper.chunk_text()
+                    result = SummarizerService.summarize_paper(paper.chunks, style)
+
+                    # 💾 Save to cache
+                    CacheManager.save_summary(file_hash, style, result)
+                    print("💾 Summary saved to cache.")
+
+                # 📊 Token + cost output
                 usage = result.get("total_usage", {})
                 prompt_tokens = usage.get("prompt_tokens", 0)
                 completion_tokens = usage.get("completion_tokens", 0)
-                total_tokens = usage.get("total_tokens", prompt_tokens + completion_tokens)
+                total_tokens = usage.get("total_tokens", 0)
 
                 model = Config.OPENAI_MODEL
                 cost = CostTracker.estimate_cost(model, prompt_tokens, completion_tokens)
@@ -84,6 +99,7 @@ class ThreadExecutor:
             run_id=run.id,
             tool_outputs=outputs
         )
+
 
 
     def get_final_response(self):

@@ -1,0 +1,8 @@
+{
+  "final_summary": "This research paper explores the responsible development of offensive AI by leveraging Sustainable Development Goals and interpretability techniques to balance societal benefits and risks. It evaluates the use of AI in security controls, vulnerability detection, and malware development, highlighting the need for robust defensive measures and prioritizing AI robustness to address potential risks. The paper emphasizes the importance of aligning AI models with SDGs and the need for collaboration to achieve cybersecurity goals and protect against vulnerabilities.",
+  "total_usage": {
+    "prompt_tokens": 7034,
+    "completion_tokens": 1054,
+    "total_tokens": 8088
+  }
+}
