@@ -38,6 +38,23 @@ class Paper:
             return self._chunks
         return None
 
+    def __str__(self):
+        return (
+            f"Paper: {self._title}\n"
+            f"Authors: {', '.join(self._authors)}\n"
+            f"Source: {self._source}\n"
+            f"Chunks: {len(self._chunks) if self._chunks else 0}"
+        )
+
+    def to_dict(self) -> dict:
+        return {
+            "title": self._title,
+            "authors": self._authors,
+            "abstract": self._abstract,
+            "source": self._source,
+            "chunks": [chunk.to_dict() for chunk in self._chunks] if self._chunks else [],
+        }
+
     @property
     def title(self) -> str:
         return self._title

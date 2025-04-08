@@ -4,6 +4,16 @@ class Chunk:
         self._text = text
         self._token_count = token_count
     
+    def __str__(self):
+        return f"[Chunk {self.index}] Tokens: {self.token_count}\nText: {self.text[:100]}..."
+
+    def to_dict(self) -> dict:
+        return {
+            "index": self.index,
+            "text": self.text,
+            "token_count": self.token_count,
+        }
+    
     @property
     def index(self) -> int:
         return self._index

@@ -77,6 +77,55 @@ class LLMClient:
             
         raise NotImplementedError(f"chat_completion is not implemented for provider '{self._provider}'")
     
+    @staticmethod
+    def health_check(provider: str, model: str) -> dict:
+        """
+        Performs a lightweight health check to ensure the LLM provider and model are working.
+
+        Args:
+            provider (str): LLM provider name (e.g., 'openai')
+            model (str): Model name to check (e.g., 'gpt-4')
+
+        Returns:
+            dict: {
+                "provider": str,
+                "model": str,
+                "status": "ok" or "fail",
+                "message": str
+            }
+        """
+        if provider.lower() == "openai":
+            try:
+                client = OpenAI(api_key=Config.OPENAI_API_KEY)  # Initialize OpenAI client
+
+                response = client._client.chat.completions.create(
+                    model=model,
+                    messages=[{"role": "system", "content": "ping"}],
+                    temperature=0.0,
+                    max_tokens=1  # extremely minimal
+                )
+
+                return {
+                    "provider": "openai",
+                    "model": model,
+                    "status": "ok",
+                    "message": "LLM responded successfully."
+                }
+            except Exception as e:
+                return {
+                    "provider": "openai",
+                    "model": model,
+                    "status": "fail",
+                    "message": str(e)
+                }
+
+        return {
+            "provider": provider,
+            "model": model,
+            "status": "fail",
+            "message": f"Health check not implemented for provider '{provider}'"
+        }
+    
     @property
     def costs(self):
         """

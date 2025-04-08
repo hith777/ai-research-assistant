@@ -3,6 +3,7 @@ import openai
 import time
 from infra.config import Config
 from agents.agent_runner import AssistantRegistrar
+from agents.llm_client import LLMClient
 
 
 class ThreadExecutor:
@@ -162,6 +163,7 @@ if __name__ == "__main__":
     parser.add_argument("--message", type=str, help="Optional custom message to send to the assistant.")
     parser.add_argument("--provider", type=str, help="LLM provider (openai, gemini, claude, etc.)")
     parser.add_argument("--model", type=str, help="Model to use (gpt-4, pro, claude-2, etc.)")
+    parser.add_argument("--health-check", action="store_true", help="Run a health check for the selected LLM provider/model")
 
 
     args = parser.parse_args()
@@ -182,6 +184,12 @@ if __name__ == "__main__":
 
     else:
         message = "Summarize this paper: sample_papers/sample_test_paper.pdf"
+    
+    if args.health_check:
+        result = LLMClient.health_check(args.provider, args.model)
+        print(f"\n🔧 LLM Health Check:\nProvider: {result['provider']}\nModel: {result['model']}\nStatus: {result['status']}\nMessage: {result['message']}")
+        exit()
+
 
     # Run assistant thread
     executor.send_message(message)
