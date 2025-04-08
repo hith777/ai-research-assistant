@@ -8,53 +8,6 @@ This system reads, compresses, summarizes, and compares academic research papers
 Built with scalability in mind — ready for multi-model support, tool expansion (e.g., explain terms, highlight figures), and UI/agent deployments.
 
 
-## Features
-
-### v0.1.0
-- Initial architecture and folder structure
-- PDF parsing with `pdfplumber`
-- Domain model for `Paper` and `Chunk`
-- Text chunking using `tiktoken`
-
-### v0.2.0
-- LLM client with OpenAI SDK
-- Summarization of individual chunks
-- Merging chunk summaries into a full paper summary
-- Summary style customization (`default`, `layman`, `short`, `technical`)
-
-### v0.3.0
-- Token usage and cost estimation
-- Modular summarizer service
-- Assistant tool: `summarize_pdf`
-- Cache system for summaries using SHA-256 + style
-- CLI with `argparse` support
-- Assistant runner with tool registration
-- Style parsing from messages
-- CLI usage with `--file` and `--style`
-
-### v0.4.0
-- Added support for `compare_papers` tool
-- Compression of full paper before comparison
-- Caching of comparisons
-- Cost tracking for comparisons
-- Dual-input CLI via `--file` and `--file2`
-- Resolved multiple tool execution in agent loops
-- Logging suppression for `pdfminer` warnings
-- Cleaner thread execution and assistant replies
-
-### v0.4.1
-- Accurate token-based cost estimation using model-aware pricing
-- summarize_paper and compare_papers return clean JSON with:
-    - summary / comparison
-    - style
-    - source
-    - chunks
-    - usage (tokens)
-    - cost (dollar value)
-- Removed cost calculation logic from CLI — moved to service layer
-- Fully ready for UI / API consumption
-
-
 ## Setup
 
 ### 1. Clone the Repository
@@ -185,3 +138,50 @@ ai-research-assistant/
 - Embedding-based similarity analysis between papers
 
 ---
+
+## Features
+
+### v0.1.0
+- Initial architecture and folder structure
+- PDF parsing with `pdfplumber`
+- Domain model for `Paper` and `Chunk`
+- Text chunking using `tiktoken`
+
+### v0.2.0
+- LLM client with OpenAI SDK
+- Summarization of individual chunks
+- Merging chunk summaries into a full paper summary
+- Summary style customization (`default`, `layman`, `short`, `technical`)
+
+### v0.3.0
+- Token usage and cost estimation
+- Modular summarizer service
+- Assistant tool: `summarize_pdf`
+- Cache system for summaries using SHA-256 + style
+- CLI with `argparse` support
+- Assistant runner with tool registration
+- Style parsing from messages
+- CLI usage with `--file` and `--style`
+
+### v0.4.0
+- Added support for `compare_papers` tool
+- Compression of full paper before comparison
+- Caching of comparisons
+- Cost tracking for comparisons
+- Dual-input CLI via `--file` and `--file2`
+- Resolved multiple tool execution in agent loops
+- Logging suppression for `pdfminer` warnings
+- Cleaner thread execution and assistant replies
+
+### v0.4.1
+- Accurate token-based cost estimation using model-aware pricing
+- summarize_paper and compare_papers return clean JSON with:
+    - summary / comparison
+    - style
+    - source
+    - chunks
+    - usage (tokens)
+    - cost (dollar value)
+- Removed cost calculation logic from CLI — moved to service layer
+- Fully ready for UI / API consumption
+
