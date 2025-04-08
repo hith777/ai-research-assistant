@@ -39,6 +39,18 @@ An intelligent agent-based assistant designed to read, summarize, and compare re
 - Logging suppression for `pdfminer` warnings
 - Cleaner thread execution and assistant replies
 
+### v0.4.1
+- Accurate token-based cost estimation using model-aware pricing
+- summarize_paper and compare_papers return clean JSON with:
+    - summary / comparison
+    - style
+    - source
+    - chunks
+    - usage (tokens)
+    - cost (dollar value)
+- Removed cost calculation logic from CLI — moved to service layer
+- Fully ready for UI / API consumption
+
 
 ## Setup
 
@@ -120,6 +132,7 @@ python -m agents.run_thread --file docs/sample_paper.pdf
 ai-research-assistant/
 │
 ├── agents/                # Assistant integration, CLI, agent_runner
+│   ├── llm_client.py      # Chat completion functions
 │   ├── run_thread.py      # CLI + Assistant execution
 │   └── agent_runner.py    # Registers assistant tools
 │
@@ -133,11 +146,17 @@ ai-research-assistant/
 ├── tools/                 # Utility layer
 │   ├── pdf_parser.py      # PDF extraction
 │   ├── text_chunker.py    # Token-based chunking
+│   ├── tools_handler.py   # Calling summarizer functions manually
 │   ├── cost_tracker.py    # Token cost calculation
 │   └── cache_manager.py   # Summary caching system
 │
 ├── infra/                 # Config and environment
-│   └── config.py          # Centralized configuration
+│   ├── config.py          # Centralized configuration
+│   └── models.py          # Available Models
+│
+├── utils/                 # Utility tools for reusability
+│   ├── message_utils.py   # Utils for prompt customization
+│   └── token_counter.py   # Counting tokens
 │
 ├── docs/                  # Sample test papers
 ├── cache/                 # Saved summary and comparison files
