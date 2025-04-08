@@ -2,7 +2,10 @@
 
 # AI Research Assistant
 
-An intelligent agent-based assistant designed to read, summarize, and compare research papers using LLMs like OpenAI's GPT. It supports customizable summary styles, cost tracking, chunk compression, caching, and both CLI and OpenAI Assistant integration.
+An intelligent research assistant powered by LLM agents.
+This system reads, compresses, summarizes, and compares academic research papers using models like OpenAI’s GPT. It supports customizable summary styles (layman, technical, short), efficient chunk compression, caching for repeated use, token usage and cost tracking, and seamless CLI or OpenAI Assistant integration.
+
+Built with scalability in mind — ready for multi-model support, tool expansion (e.g., explain terms, highlight figures), and UI/agent deployments.
 
 
 ## Features
@@ -110,13 +113,7 @@ python -m agents.run_thread --file docs/paper1.pdf --file2 docs/paper2.pdf --sty
 
 ## Assistant Tool Usage
 
-1. Run the assistant registration script:
-
-```bash
-python agents/agent_runner.py
-```
-
-2. Run the assistant thread:
+1. Run the assistant thread:
 
 ```bash
 python -m agents.run_thread --file docs/sample_paper.pdf
