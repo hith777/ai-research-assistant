@@ -1,7 +1,10 @@
 from domain.paper import Paper
 from domain.chunk import Chunk
 from typing import List, Optional
+from infra.config import Config
+from tools.cost_tracker import CostTracker
 from agents.llm_client import LLMClient
+from utils.token_counter import TokenCounter
 
 
 class SummarizerService:
@@ -100,7 +103,8 @@ class SummarizerService:
                     "prompt_tokens": int,
                     "completion_tokens": int,
                     "total_tokens": int
-                }
+                },
+                used_compression: bool
             }
         """
         if not chunk:
@@ -123,7 +127,7 @@ class SummarizerService:
             }
 
     @staticmethod
-    def summarize_paper(chunks: Optional[List[Chunk]], style: str = "default", llm: Optional[LLMClient] = None) -> dict:
+    def summarize_paper(chunks: Optional[List[Chunk]], style: str = "default", llm: Optional[LLMClient] = None, provider: Optional[str] = None, model: Optional[str] = None) -> dict:
         """
         Summarizes the entire paper by:
         1. Compressing all chunks (preserving technical accuracy),
@@ -137,24 +141,32 @@ class SummarizerService:
         Returns:
             dict: {
                 "final_summary": str,
+                "style": str,
+                "source": str,
                 "total_usage": {
                     "prompt_tokens": int,
                     "completion_tokens": int,
                     "total_tokens": int
-                }
+                },
+                "cost": float
             }
         """
         if not chunks:
             return {
                 "final_summary": "",
+                "style": "",
+                "source": "full_text",
+                "chunks": 0,
                 "total_usage": {
                     "prompt_tokens": 0,
                     "completion_tokens": 0,
                     "total_tokens": 0
-                }
+                },
+                "cost": 0.0
+
             }
 
-        llm = llm or LLMClient()
+        llm = llm or LLMClient(provider, model)
 
         #Step 1: Compress the full paper
         compression = SummarizerService.compress_paper(chunks, llm)
@@ -169,25 +181,40 @@ class SummarizerService:
             summary_response = llm.chat_completion(final_prompt)
             summary_usage = summary_response["usage"]
 
+            total_prompt = compression_usage.get("prompt_tokens", 0) + summary_usage.get("prompt_tokens", 0)
+            total_completion = compression_usage.get("completion_tokens", 0) + summary_usage.get("completion_tokens", 0)
+            total_tokens = compression_usage.get("total_tokens", 0) + summary_usage.get("total_tokens", 0)
 
             return {
                 "final_summary": summary_response["text"],
+                "style": style,
+                "source": "compressed" if compression.get("used_compression") else "full_text",
+                "chunks": len(chunks),
                 "total_usage": {
-                    "prompt_tokens": compression_usage["prompt_tokens"] + summary_usage["prompt_tokens"],
-                    "completion_tokens": compression_usage["completion_tokens"] + summary_usage["completion_tokens"],
-                    "total_tokens": compression_usage["total_tokens"] + summary_usage["total_tokens"],
-                }
+                    "prompt_tokens": total_prompt,
+                    "completion_tokens": total_completion,
+                    "total_tokens": total_tokens,
+                },
+                "cost": CostTracker.estimate_cost(
+                    prompt_tokens=total_prompt,
+                    completion_tokens=total_completion,
+                    cost_per_1k_tokens=llm.costs
+                )
             }
 
         except Exception as e:
             print(f"[ERROR] Failed to summarize compressed paper: {e}")
             return {
                 "final_summary": "",
+                "style": "",
+                "source": "full_text",
+                "chunks": 0,
                 "total_usage": {
                     "prompt_tokens": 0,
                     "completion_tokens": 0,
                     "total_tokens": 0
                 }
+
             }
 
     @staticmethod
@@ -210,9 +237,24 @@ class SummarizerService:
             }
         """
         if not chunks:
-            return {"compressed_text": "", "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}}
+            return {"compressed_text": "", "usage": {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}, "used_compression": False}
 
         llm = llm or LLMClient()
+
+        full_text = "\n\n".join(chunk.text for chunk in chunks)
+        total_tokens = TokenCounter.count_tokens(full_text)
+
+        if total_tokens < TokenCounter.get_max_tokens():
+            # Summarize the entire raw paper in one go (no compression)
+            full_text = "\n\n".join(chunk.text for chunk in chunks)
+            prompt = "Summarize the following research paper text concisely, preserving all technical detail:\n\n" + full_text
+            response = llm.chat_completion(prompt)
+            return {
+                "compressed_text": response["text"],
+                "usage": response["usage"],
+                "used_compression": False
+            }
+
         compressed_sections = []
         total_usage = {"prompt_tokens": 0, "completion_tokens": 0, "total_tokens": 0}
 
@@ -232,13 +274,14 @@ class SummarizerService:
 
         return {
             "compressed_text": "\n\n".join(compressed_sections),
-            "usage": total_usage
+            "usage": total_usage,
+            "used_compression": True
         }
 
 
     
     @staticmethod
-    def compare_papers(path1: str, path2: str, style: str = "default", llm: Optional[LLMClient] = None) -> dict:
+    def compare_papers(path1: str, path2: str, style: str = "default", llm: Optional[LLMClient] = None, provider: Optional[str] = None, model: Optional[str] = None) -> dict:
         """
         Compares two research papers by compressing their full content
         and generating a comparison based on goals, methods, and conclusions.
@@ -252,15 +295,18 @@ class SummarizerService:
         Returns:
             dict: {
                 "comparison": str,
+                "style": str,
+                "source": str,
                 "total_usage": {
                     "prompt_tokens": int,
                     "completion_tokens": int,
                     "total_tokens": int
-                }
+                },
+                "cost": float
             }
         """
         try:
-            llm = llm or LLMClient()
+            llm = llm or LLMClient(provider, model)
             paper1 = Paper.from_pdf(path1)
             paper2 = Paper.from_pdf(path2)
 
@@ -300,17 +346,28 @@ class SummarizerService:
 
             return {
                 "comparison": response["text"],
-                "total_usage": total_usage
+                "style": style,
+                "source": "compressed",
+                "total_usage": total_usage,
+                "cost": CostTracker.estimate_cost(
+                    prompt_tokens=total_usage["prompt_tokens"],
+                    completion_tokens=total_usage["completion_tokens"],
+                    cost_per_1k_tokens=llm._costs
+                )
+
             }
 
         except Exception as e:
             print(f"[ERROR] Failed to compare papers: {e}")
             return {
                 "comparison": "Comparison failed due to an internal error.",
+                "style": "",
+                "source": "full_text",
                 "total_usage": {
                     "prompt_tokens": 0,
                     "completion_tokens": 0,
                     "total_tokens": 0
-                }
+                },
+                "cost": 0.0
             }
 

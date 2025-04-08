@@ -1,0 +1,12 @@
+{
+  "final_summary": "This paper presents an empirical study on common challenges faced by developers when building deep learning applications. The study analyzes 715 questions from Stack Overflow related to deep learning and identifies seven frequently asked types of questions. A classification model is built to quantify the distribution of these questions among a total of 39,628 deep learning questions on the platform. The top three most common types of questions are related to program crashes, model migration, and implementation. The study highlights five main root causes that may require attention from the research community, such as API misuse and incorrect hyperparameter selection. The paper emphasizes the need for better tool support, debugging techniques, and cross-framework model migration testing to improve software development productivity and reliability in deep learning applications.",
+  "style": "technical",
+  "source": "compressed",
+  "chunks": 33,
+  "total_usage": {
+    "prompt_tokens": 22178,
+    "completion_tokens": 5116,
+    "total_tokens": 27294
+  },
+  "cost": 0.03241
+}

@@ -6,7 +6,9 @@ from agents.agent_runner import AssistantRegistrar
 
 
 class ThreadExecutor:
-    def __init__(self, assistant_id: str):
+    def __init__(self, assistant_id: str, provider: str = None, model: str = None):
+        self.provider = provider
+        self.model = model
         self.assistant_id = assistant_id
         self.thread = openai.beta.threads.create()
         openai.api_key = Config.OPENAI_API_KEY
@@ -49,7 +51,6 @@ class ThreadExecutor:
     def handle_tool_calls(self, run):
         from services.summarizer import SummarizerService
         from domain.paper import Paper
-        from tools.cost_tracker import CostTracker
         from tools.cache_manager import CacheManager
         from infra.config import Config
         from utils.message_utils import extract_style_from_messages
@@ -78,7 +79,7 @@ class ThreadExecutor:
                     # ⏳ Process normally
                     paper = Paper.from_pdf(path)
                     paper.chunk_text()
-                    result = SummarizerService.summarize_paper(paper.chunks, style)
+                    result = SummarizerService.summarize_paper(paper.chunks, style, provider=self.provider, model=self.model)
 
                     # 💾 Save to cache
                     CacheManager.save_summary(file_hash, style, result)
@@ -91,7 +92,7 @@ class ThreadExecutor:
                 total_tokens = usage.get("total_tokens", 0)
 
                 model = Config.OPENAI_MODEL
-                cost = CostTracker.estimate_cost(model, prompt_tokens, completion_tokens)
+                cost = result.get("cost", 0.0)
 
                 print(f"📊 Token Usage: {total_tokens} tokens")
                 print(f"💸 Estimated Cost ({model}): ${cost:.6f}")
@@ -115,7 +116,7 @@ class ThreadExecutor:
                     print("Loaded comparison from cache!")
                     result = CacheManager.load_cached_summary(combined_key, style)
                 else:
-                    result = SummarizerService.compare_papers(path1, path2, style)
+                    result = SummarizerService.compare_papers(path1, path2, style, provider=self.provider, model=self.model)
                     CacheManager.save_summary(combined_key, style, result)
                     print("Comparison saved to cache.")
 
@@ -125,7 +126,7 @@ class ThreadExecutor:
                 total_tokens = usage.get("total_tokens", 0)
 
                 model = Config.OPENAI_MODEL
-                cost = CostTracker.estimate_cost(model, prompt_tokens, completion_tokens)
+                cost = result.get("cost", 0.0)
 
                 print(f"📊 Token Usage: {total_tokens} tokens")
                 print(f"💸 Estimated Cost ({model}): ${cost:.6f}")
@@ -159,12 +160,15 @@ if __name__ == "__main__":
     parser.add_argument("--file2", type=str, help="Second PDF for comparison (if running compare_papers).")
     parser.add_argument("--style", type=str, default="default", help="Style for summarization or comparison.")
     parser.add_argument("--message", type=str, help="Optional custom message to send to the assistant.")
+    parser.add_argument("--provider", type=str, help="LLM provider (openai, gemini, claude, etc.)")
+    parser.add_argument("--model", type=str, help="Model to use (gpt-4, pro, claude-2, etc.)")
+
 
     args = parser.parse_args()
 
     tools = AssistantRegistrar.register_tools()
     assistant_id = AssistantRegistrar.get_or_create_assistant(Config.OPENAI_MODEL, tools)
-    executor = ThreadExecutor(assistant_id)
+    executor = ThreadExecutor(assistant_id, provider=args.provider, model=args.model)
 
     # Build message
     if args.message:

@@ -1,12 +1,25 @@
 from infra.config import Config
+from infra.models import SUPPORTED_MODELS
 from typing import Optional
 from openai import OpenAI
 
 class LLMClient:
     def __init__(self, provider: Optional[str] = None, model: Optional[str] = None):
-        self._provider = provider or Config.LLM_PROVIDER
-        self._model = model or Config.OPENAI_MODEL
+        self._provider = (provider or Config.LLM_PROVIDER).lower()
+        self._model = (model or Config.OPENAI_MODEL).lower()
         self._client = self._init_client()
+
+        model_data = SUPPORTED_MODELS.get(self._provider, {}).get(self._model)
+
+        if not model_data:
+            raise ValueError(f"Unsupported model '{self._model}' for provider '{self._provider}'")
+
+        self._model = model_data["id"]  # Resolved to full OpenAI model name
+        self._max_tokens = model_data["max_tokens"]
+        self._costs = {
+            "input": model_data["input_cost_per_1k"],
+            "output": model_data["output_cost_per_1k"]
+        }
     
     def _init_client(self):
         if self._provider.lower() == "openai":
@@ -63,6 +76,13 @@ class LLMClient:
                 }
             
         raise NotImplementedError(f"chat_completion is not implemented for provider '{self._provider}'")
+    
+    @property
+    def costs(self):
+        """
+        Returns the cost per 1K tokens for input and output.
+        """
+        return self._costs
 
 
 
