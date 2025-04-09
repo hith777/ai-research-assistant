@@ -1,7 +1,7 @@
 import re
 import openai
 from typing import Optional
-from domain.chunk import Chunk
+from domain.text_chunk import Chunk
 
 def extract_style_from_messages(thread_id: str, default: str = "default") -> str:
     """

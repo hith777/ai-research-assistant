@@ -1,6 +1,6 @@
 import tiktoken
 from typing import List
-from domain.chunk import Chunk
+from domain.text_chunk import Chunk
 
 class TextChunker:
 

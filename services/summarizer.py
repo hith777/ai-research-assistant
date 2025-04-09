@@ -1,5 +1,5 @@
 from domain.paper import Paper
-from domain.chunk import Chunk
+from domain.text_chunk import Chunk
 from typing import List, Optional
 from infra.config import Config
 from tools.cost_tracker import CostTracker

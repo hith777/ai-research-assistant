@@ -1,6 +1,6 @@
 SUPPORTED_MODELS = {
     "openai": {
-        "gpt-3": {
+        "gpt-3.5-turbo": {
             "id": "gpt-3.5-turbo",
             "max_tokens": 16000,
             "input_cost_per_1k": 0.001,

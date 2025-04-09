@@ -1,0 +1,12 @@
+{
+  "summary": "This is a test summary.",
+  "style": "default",
+  "source": "compressed",
+  "chunks": 1,
+  "usage": {
+    "prompt_tokens": 10,
+    "completion_tokens": 20,
+    "total_tokens": 30
+  },
+  "cost": 0.0002
+}

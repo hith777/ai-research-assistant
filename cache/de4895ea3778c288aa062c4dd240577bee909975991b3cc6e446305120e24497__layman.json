@@ -1,8 +1,0 @@
-{
-  "final_summary": "This research paper explores the responsible development of offensive AI to combat cyber threats while considering societal benefits and risks. It discusses the use of AI for defensive purposes and the challenges of malicious actors leveraging AI for attacks. The study focuses on using Sustainable Development Goals to assess the societal benefits of AI development. It also highlights the importance of prioritizing AI robustness, protecting data, and promoting global collaboration in cybersecurity. The research emphasizes the need for defensive research before prioritizing offensive methods and the importance of secure transactions and faith in institutions to safeguard user data.",
-  "total_usage": {
-    "prompt_tokens": 6986,
-    "completion_tokens": 1027,
-    "total_tokens": 8013
-  }
-}

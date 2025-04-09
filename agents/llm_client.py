@@ -98,7 +98,7 @@ class LLMClient:
             try:
                 client = OpenAI(api_key=Config.OPENAI_API_KEY)  # Initialize OpenAI client
 
-                response = client._client.chat.completions.create(
+                response = client.chat.completions.create(
                     model=model,
                     messages=[{"role": "system", "content": "ping"}],
                     temperature=0.0,

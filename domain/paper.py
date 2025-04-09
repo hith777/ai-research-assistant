@@ -1,5 +1,5 @@
 from tools.pdf_parser import PDFParser
-from chunk import Chunk
+from domain.text_chunk import Chunk
 from typing import Optional, List
 from tools.text_chunker import TextChunker
 
@@ -13,16 +13,21 @@ class Paper:
         self._chunks: Optional[List[Chunk]] = []
     
     @classmethod
-    def from_pdf(cls, pdf_path: str) -> Optional["Paper"]:
+    def from_pdf(cls, pdf_path: str, metadata: dict = None) -> Optional["Paper"]:
         parsed_file = PDFParser.extract_info(pdf_path)
 
         raw_text = parsed_file.raw_text
 
         #simulate the extraction of title, authors, and abstract
-        title = input("Enter the title of the paper: ")
-        authors_input= input("Enter the authors of the paper (comma separated): ")
-        authors = [author.strip() for author in authors_input.split(',')]
-        abstract = input("Enter the abstract of the paper: ")
+        if metadata:
+            title = metadata.get("title", "")
+            authors = metadata.get("authors", [])
+            abstract = metadata.get("abstract", "")
+        else:
+            title = input("Enter the title of the paper: ")
+            authors_input = input("Enter the authors of the paper (comma separated): ")
+            authors = [author.strip() for author in authors_input.split(',')]
+            abstract = input("Enter the abstract of the paper: ")
 
         return cls(title=title, authors=authors, abstract=abstract, source=pdf_path, raw_text=raw_text)
     

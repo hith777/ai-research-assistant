@@ -17,3 +17,6 @@ docs/
 
 #assistant_id
 .assistant_id
+
+#pytest
+.pytest_cache/
