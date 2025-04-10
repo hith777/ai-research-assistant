@@ -2,12 +2,13 @@ from tools.pdf_parser import PDFParser
 from domain.text_chunk import Chunk
 from typing import Optional, List
 from tools.text_chunker import TextChunker
+from services.metadata_extractor import extract_metadata_with_llm
+from utils.token_counter import TokenCounter
 
 class Paper:
-    def __init__(self, title: str, authors: list[str], abstract: str, source: str, raw_text: str):
+    def __init__(self, title: str, authors: list[str], source: str, raw_text: str):
         self._title = title
         self._authors = authors
-        self._abstract = abstract
         self._source = source
         self._raw_text = raw_text
         self._chunks: Optional[List[Chunk]] = []
@@ -15,21 +16,21 @@ class Paper:
     @classmethod
     def from_pdf(cls, pdf_path: str, metadata: dict = None) -> Optional["Paper"]:
         parsed_file = PDFParser.extract_info(pdf_path)
-
         raw_text = parsed_file.raw_text
 
-        #simulate the extraction of title, authors, and abstract
         if metadata:
             title = metadata.get("title", "")
             authors = metadata.get("authors", [])
-            abstract = metadata.get("abstract", "")
         else:
-            title = input("Enter the title of the paper: ")
-            authors_input = input("Enter the authors of the paper (comma separated): ")
-            authors = [author.strip() for author in authors_input.split(',')]
-            abstract = input("Enter the abstract of the paper: ")
+            tokenizer = TokenCounter.get_tokenizer()
+            tokens = tokenizer.encode(raw_text)
+            metadata_chunk = tokenizer.decode(tokens[:800])
 
-        return cls(title=title, authors=authors, abstract=abstract, source=pdf_path, raw_text=raw_text)
+            metadata = extract_metadata_with_llm(metadata_chunk)
+            title = metadata.get("title", "")
+            authors = metadata.get("authors", [])
+
+        return cls(title=title, authors=authors, source=pdf_path, raw_text=raw_text)
     
     def chunk_text(self, max_tokens: int = 500, overlap: int = 50) -> Optional[List[Chunk]]:
         """
@@ -55,7 +56,6 @@ class Paper:
         return {
             "title": self._title,
             "authors": self._authors,
-            "abstract": self._abstract,
             "source": self._source,
             "chunks": [chunk.to_dict() for chunk in self._chunks] if self._chunks else [],
         }
@@ -67,10 +67,6 @@ class Paper:
     @property
     def authors(self) -> list[str]:
         return self._authors
-
-    @property
-    def abstract(self) -> str:
-        return self._abstract
     
     @property
     def source(self) -> str:

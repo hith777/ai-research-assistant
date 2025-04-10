@@ -4,6 +4,7 @@ import time
 from infra.config import Config
 from agents.agent_runner import AssistantRegistrar
 from agents.llm_client import LLMClient
+from tools.figure_analyzer import FigureAnalyzer
 
 
 class ThreadExecutor:
@@ -77,10 +78,7 @@ class ThreadExecutor:
                     print("✅ Loaded summary from cache!")
                     result = CacheManager.load_cached_summary(file_hash, style)
                 else:
-                    # ⏳ Process normally
-                    paper = Paper.from_pdf(path)
-                    paper.chunk_text()
-                    result = SummarizerService.summarize_paper(paper.chunks, style, provider=self.provider, model=self.model)
+                    result = SummarizerService.summarize_paper(path, style, provider=self.provider, model=self.model)
 
                     # 💾 Save to cache
                     CacheManager.save_summary(file_hash, style, result)
@@ -164,6 +162,8 @@ if __name__ == "__main__":
     parser.add_argument("--provider", type=str, help="LLM provider (openai, gemini, claude, etc.)")
     parser.add_argument("--model", type=str, help="Model to use (gpt-4, pro, claude-2, etc.)")
     parser.add_argument("--health-check", action="store_true", help="Run a health check for the selected LLM provider/model")
+    parser.add_argument("--highlight-figures", action="store_true", help="Analyze and explain figure and table references in the paper")
+
 
 
     args = parser.parse_args()
@@ -189,6 +189,23 @@ if __name__ == "__main__":
         result = LLMClient.health_check(args.provider, args.model)
         print(f"\n🔧 LLM Health Check:\nProvider: {result['provider']}\nModel: {result['model']}\nStatus: {result['status']}\nMessage: {result['message']}")
         exit()
+    
+    if args.file and args.highlight_figures:
+
+        print(f"\n🔎 Analyzing figures in: {args.file}")
+        analyzer = FigureAnalyzer(args.file)
+        explanations = analyzer.explain_figures()
+
+        if not explanations:
+            print("⚠️ No figure or table references found.")
+        else:
+            print("\n📊 Figure/Table Explanations:\n")
+            for label, explanation in explanations.items():
+                print(f"--- {label} ---")
+                print(explanation)
+                print()
+        exit()
+
 
 
     # Run assistant thread

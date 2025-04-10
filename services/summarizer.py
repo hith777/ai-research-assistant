@@ -51,20 +51,22 @@ class SummarizerService:
             }
 
     @staticmethod
-    def summarize_paper(chunks: Optional[List[Chunk]], style: str = "default", llm: Optional[LLMClient] = None, provider: Optional[str] = None, model: Optional[str] = None) -> dict:
+    def summarize_paper(path: str, style: str = "default", llm: Optional[LLMClient] = None, provider: Optional[str] = None, model: Optional[str] = None) -> dict:
         """
         Summarizes the entire paper by:
         1. Compressing all chunks (preserving technical accuracy),
         2. Generating a styled summary from the full compressed content.
 
         Args:
-            chunks (List[Chunk]): The list of paper chunks.
+            path (str): file path to the paper.
             style (str): Final summary style ('default', 'short', 'layman', etc.).
             llm (LLMClient, optional): Optional shared LLMClient instance.
 
         Returns:
             dict: {
                 "final_summary": str,
+                "title": str,
+                "authors": List[str],
                 "style": str,
                 "source": str,
                 "total_usage": {
@@ -75,9 +77,11 @@ class SummarizerService:
                 "cost": float
             }
         """
-        if not chunks:
+        if not path:
             return {
                 "final_summary": "",
+                "title": "",
+                "authors": [],
                 "style": "",
                 "source": "full_text",
                 "chunks": 0,
@@ -93,7 +97,9 @@ class SummarizerService:
         llm = llm or LLMClient(provider, model)
 
         #Step 1: Compress the full paper
-        compression = SummarizerService.compress_paper(chunks, llm)
+        paper = Paper.from_pdf(path)
+        paper.chunk_text()
+        compression = SummarizerService.compress_paper(paper.chunks, llm)
         compressed_text = compression["compressed_text"]
         compression_usage = compression["usage"]
 
@@ -111,9 +117,11 @@ class SummarizerService:
 
             return {
                 "final_summary": summary_response["text"],
+                "title": paper.title,
+                "authors": paper.authors,
                 "style": style,
                 "source": "compressed" if compression.get("used_compression") else "full_text",
-                "chunks": len(chunks),
+                "chunks": len(paper.chunks),
                 "total_usage": {
                     "prompt_tokens": total_prompt,
                     "completion_tokens": total_completion,
@@ -130,6 +138,8 @@ class SummarizerService:
             print(f"[ERROR] Failed to summarize compressed paper: {e}")
             return {
                 "final_summary": "",
+                "title": "",
+                "authors": [],
                 "style": "",
                 "source": "full_text",
                 "chunks": 0,
@@ -170,7 +180,6 @@ class SummarizerService:
 
         if total_tokens < TokenCounter.get_max_tokens():
             # Summarize the entire raw paper in one go (no compression)
-            full_text = "\n\n".join(chunk.text for chunk in chunks)
             prompt = "Summarize the following research paper text concisely, preserving all technical detail:\n\n" + full_text
             response = llm.chat_completion(prompt)
             return {
@@ -226,7 +235,15 @@ class SummarizerService:
                     "completion_tokens": int,
                     "total_tokens": int
                 },
-                "cost": float
+                "cost": float,
+                "paper_1": {
+                    "title": str,
+                    "authors": List[str]
+                },
+                "paper_2": {
+                    "title": str,
+                    "authors": List[str]
+                }
             }
         """
         try:
@@ -237,7 +254,7 @@ class SummarizerService:
             paper1.chunk_text()
             paper2.chunk_text()
 
-            # ✅ Compress both papers
+            #Compress both papers
             compressed1 = SummarizerService.compress_paper(paper1.chunks, llm)
             compressed2 = SummarizerService.compress_paper(paper2.chunks, llm)
 
@@ -277,8 +294,15 @@ class SummarizerService:
                     prompt_tokens=total_usage["prompt_tokens"],
                     completion_tokens=total_usage["completion_tokens"],
                     cost_per_1k_tokens=llm._costs
-                )
-
+                ),
+                "paper_1": {
+                    "title": paper1.title,
+                    "authors": paper1.authors
+                },
+                "paper_2": {
+                    "title": paper2.title,
+                    "authors": paper2.authors
+                }
             }
 
         except Exception as e:
@@ -292,6 +316,14 @@ class SummarizerService:
                     "completion_tokens": 0,
                     "total_tokens": 0
                 },
-                "cost": 0.0
+                "cost": 0.0,
+                "paper_1": {
+                    "title": "",
+                    "authors": []
+                },
+                "paper_2": {
+                    "title": "",
+                    "authors": []
+                }
             }
 

@@ -1,6 +1,6 @@
 import re
 import openai
-from typing import Optional
+from typing import Optional, List
 from domain.text_chunk import Chunk
 
 def extract_style_from_messages(thread_id: str, default: str = "default") -> str:
@@ -71,7 +71,7 @@ def build_compression_prompt(text: str) -> str:
     )
 
 
-def build_compressed_summary_prompt(compressed_text: str, style: str = "default") -> str:
+def build_compressed_summary_prompt(compressed_text: str, style: str = "default", title: str = "", authors: List[str] = [], ) -> str:
     """
     Builds a prompt to summarize the full compressed version of a research paper.
 
@@ -84,23 +84,21 @@ def build_compressed_summary_prompt(compressed_text: str, style: str = "default"
     """
     if style == "short":
         instruction = (
-            "You are given a compressed version of a research paper. "
             "Summarize it briefly in 2-3 sentences."
         )
     elif style == "layman":
         instruction = (
-            "You are given a compressed version of a research paper. "
             "Explain it in simple, layman-friendly language so anyone can understand it."
         )
     elif style == "detailed":
         instruction = (
-            "You are given a compressed version of a research paper. "
             "Provide a thorough, paragraph-level summary that captures the structure and technical depth."
         )
     else:
         instruction = (
-            "You are given a compressed version of a research paper. "
             "Summarize it clearly and concisely while preserving its key ideas and structure."
         )
 
-    return f"{instruction}\n\n{compressed_text.strip()}"
+    authors_str = ", ".join(authors) if authors else "Unknown authors"
+
+    return f"You are summarizing a research paper titled: {title}, authored by: {authors_str}, {instruction}\n\n{compressed_text.strip()}"
