@@ -62,6 +62,24 @@ python -m agents.run_thread --file docs/sample_paper.pdf --style layman
 python -m agents.run_thread --file docs/paper1.pdf --file2 docs/paper2.pdf --style technical
 ```
 
+### CLI Key Terms Explain
+
+```bash
+python -m agents.run_thread --file docs/sample_paper.pdf --explain-term dropout
+```
+
+### CLI List Top Terms In a Paper
+
+```bash
+python -m agents.run_thread --file docs/sample_paper.pdf --explain-term dropout
+```
+
+### CLI Search Papers of an Author
+
+```bash
+python -m agents.run_thread --search-author "Marinelli" --folder docs/
+```
+
 ---
 
 ## Assistant Tool Usage
@@ -81,24 +99,29 @@ python -m agents.run_thread --file docs/sample_paper.pdf
 ```
 ai-research-assistant/
 │
-├── agents/                # Assistant integration, CLI, agent_runner
-│   ├── llm_client.py      # Chat completion functions
-│   ├── run_thread.py      # CLI + Assistant execution
-│   └── agent_runner.py    # Registers assistant tools
+├── agents/                     # Assistant integration, CLI, agent_runner
+│   ├── llm_client.py           # Chat completion functions
+│   ├── run_thread.py           # CLI + Assistant execution
+│   └── agent_runner.py         # Registers assistant tools
 │
-├── domain/                # Core models
-│   ├── paper.py           # Paper class
-│   └── chunk.py           # Chunk class
+├── domain/                     # Core models
+│   ├── paper.py                # Paper class
+│   └── chunk.py                # Chunk class
 │
-├── services/              # Business logic
-│   └── summarizer.py      # Summarization and comparison
+├── services/                   # Business logic
+│   ├── summarizer.py           # Summarization and comparison
+│   ├── explainer.py            # Explainer Key Terms
+│   ├── metadata_extractor.py   # Extracting Titles and Authors
+│   └── author_search.py        # Search papers of an author
 │
-├── tools/                 # Utility layer
-│   ├── pdf_parser.py      # PDF extraction
-│   ├── text_chunker.py    # Token-based chunking
-│   ├── tools_handler.py   # Calling summarizer functions manually
-│   ├── cost_tracker.py    # Token cost calculation
-│   └── cache_manager.py   # Summary caching system
+├── tools/                      # Utility layer
+│   ├── pdf_parser.py           # PDF extraction
+│   ├── text_chunker.py         # Token-based chunking
+│   ├── tools_handler.py        # Calling summarizer functions manually
+│   ├── cost_tracker.py         # Token cost calculation
+│   ├── author_cache.py         # Saving Papers by Author
+│   ├── figure_analyzer.py      # Prototype Model
+│   └── cache_manager.py        # Summary caching system
 │
 ├── infra/                 # Config and environment
 │   ├── config.py          # Centralized configuration
@@ -109,7 +132,7 @@ ai-research-assistant/
 │   └── token_counter.py   # Counting tokens
 │
 ├── docs/                  # Sample test papers
-├── cache/                 # Saved summary and comparison files
+├── cache/                 # Saved summary and comparison and Author-paper files
 └── tests/                 # Future tests (Pytest-compatible)
 ```
 
@@ -124,6 +147,14 @@ ai-research-assistant/
 5. Token cost tracked and cached by SHA-256 + style
 6. Optional: full paper compressed for comparison
 7. Output returned via CLI or Assistant
+
+### Current Tool Capabilities
+
+- `summarize_pdf` — summarizes a paper using chunking/compression
+- `compare_papers` — compresses + compares two papers side-by-side
+- `explain_term` — explains a term using context from the paper (or fallback)
+- `search_by_author` — searches cached/indexed papers by author name
+
 
 ---
 
@@ -185,8 +216,32 @@ ai-research-assistant/
 - Removed cost calculation logic from CLI — moved to service layer
 - Fully ready for UI / API consumption
 
-### Prototype Feature (Archived)
+### Prototype Feature (Archived) v0.5.0
 - `highlight_figures()` – Initial attempt using PyMuPDF + LLM caption summarization
 - Status: archived for future multimodal LLM (GPT-4V, Claude 3 Opus, etc.)
 - Fails on layout inconsistencies and figure detection hallucinations
 - Code preserved in `tools/prototype_figure_analyzer.py`
+
+### v0.5.1
+- Added `explain_term` tool to explain key terms from a paper
+- Token-aware routing: uses full paper if small, chunks if large
+- Fallback explanation if term not found in context
+- Supports explanation styles (default, layman, technical, short, verbose)
+- Auto-extracts top terms if no specific term is requested
+- Agent and CLI support for `--explain-term`
+- Output includes source label: contextual, chunked, or fallback
+
+### v0.5.2
+- Cleaned tokenizer abstraction via `TokenCounter.get_token_chunk()`
+- Removed hardcoded tokenizer logic from Paper and services
+- Clarified CLI behavior for optional `--explain-term`
+- Improved resilience of `extract_terms()` prompt parsing
+- Tagged final `TermExplainer` version as agent-ready
+
+### v0.5.3
+- Added `search_by_author` tool to find papers by author name from folder
+- Created `AuthorCache` to log author→paper mappings during paper parsing
+- Hooked author caching into `Paper.from_pdf()` automatically
+- CLI supports `--search-author "Name"` with `--folder "path/to/folder"`
+- Author cache stored in `cache/author_index.json` to avoid duplicate processing
+- Agent tool: `search_by_author(name, folder)` registered and enabled

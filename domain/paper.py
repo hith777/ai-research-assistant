@@ -3,8 +3,7 @@ from domain.text_chunk import Chunk
 from typing import Optional, List
 from tools.text_chunker import TextChunker
 from services.metadata_extractor import extract_metadata_with_llm
-from utils.token_counter import TokenCounter
-from infra.config import Config
+from tools.author_cache import AuthorCache
 
 class Paper:
     def __init__(self, title: str, authors: list[str], source: str, raw_text: str):
@@ -31,6 +30,9 @@ class Paper:
 
             title = metadata.get("title", "")
             authors = metadata.get("authors", [])
+        
+        if title and authors:
+            AuthorCache.add_paper(title=title, authors=authors, path=pdf_path)
 
         return cls(title=title, authors=authors, source=pdf_path, raw_text=raw_text)
     

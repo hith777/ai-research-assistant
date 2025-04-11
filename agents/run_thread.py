@@ -158,8 +158,26 @@ class ThreadExecutor:
                     "tool_call_id": tool_call.id,
                     "output": output
                 })
+            
+            elif func_name == "search_by_author":
+                from services.author_search import AuthorSearch
 
+                name = args["name"]
+                folder = args["folder"]
 
+                results = AuthorSearch.search_by_author(name, folder)
+                if not results:
+                    output = f"No papers found for author '{name}'."
+                else:
+                    output = f"📚 Found {len(results)} papers by '{name}':\n\n"
+                    for r in results:
+                        output += f"📄 {r['title']}\n👥 {', '.join(r['authors'])}\n📁 {r['path']}\n\n"
+
+                outputs.append({
+                    "tool_call_id": tool_call.id,
+                    "output": output
+                })
+                
 
         openai.beta.threads.runs.submit_tool_outputs(
             thread_id=self.thread.id,
@@ -189,6 +207,9 @@ if __name__ == "__main__":
     parser.add_argument("--health-check", action="store_true", help="Run a health check for the selected LLM provider/model")
     parser.add_argument("--experimental-highlight-figures", action="store_true", help="(Prototype) Attempt to explain figures/tables")
     parser.add_argument("--explain-term", nargs="?", const="", help="Explain a term using paper context (leave blank to extract keywords)")
+    parser.add_argument("--search-author", type=str, help="Search local PDFs for papers by this author")
+    parser.add_argument("--folder", type=str, help="Folder path for searching PDFs")
+
 
 
 
@@ -235,6 +256,22 @@ if __name__ == "__main__":
             else:
                 for i, term in enumerate(keywords, 1):
                     print(f"{i}. {term}")
+        exit()
+
+    if args.search_author and args.folder:
+        from services.author_search import AuthorSearch
+
+        results = AuthorSearch.search_by_author(args.search_author, args.folder)
+
+        if not results:
+            print(f"No papers found for author: {args.search_author}")
+        else:
+            print(f"\n📚 Found {len(results)} papers by '{args.search_author}':\n")
+            for r in results:
+                print(f"📄 {r['title']}")
+                print(f"👥 Authors: {', '.join(r['authors'])}")
+                print(f"📁 Path: {r['path']}\n")
+
         exit()
 
 

@@ -1,0 +1,20 @@
+{
+  "final_summary": "This research paper analyzes common challenges faced by developers in building deep learning applications by studying 715 questions from Stack Overflow. The study identifies seven types of frequently asked questions and highlights five main root causes of these challenges, including API misuse, incorrect hyperparameter selection, GPU computation, static logic in source code, and configuration of computation units. The paper emphasizes the need for better support to address programming issues in deep learning applications and suggests further investigation into debugging and profiling machine learning systems. The study also discusses the importance of understanding common questions related to library dependencies and hardware compatibility, as well as the need for automated techniques to inspect and classify deep learning questions. Future research directions include improving tool support for debugging and profiling, as well as conducting surveys and interviews with professional engineers to adapt to evolving deep learning frameworks.",
+  "title": "An Empirical Study of Common Challenges in Developing Deep Learning Applications",
+  "authors": [
+    "Tianyi Zhang",
+    "Cuiyun Gao",
+    "Lei Ma",
+    "Michael R. Lyu",
+    "Miryung Kim"
+  ],
+  "style": "default",
+  "source": "compressed",
+  "chunks": 33,
+  "total_usage": {
+    "prompt_tokens": 21949,
+    "completion_tokens": 4897,
+    "total_tokens": 26846
+  },
+  "cost": 0.031743
+}

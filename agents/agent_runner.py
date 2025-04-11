@@ -73,7 +73,29 @@ class AssistantRegistrar:
                         "required": ["path", "term"]
                     }
                 }
+            },
+            {
+                "type": "function",
+                "function": {
+                    "name": "search_by_author",
+                    "description": "Searches local PDFs to find papers by a given author.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Author name to search for"
+                            },
+                            "folder": {
+                                "type": "string",
+                                "description": "Path to the folder containing PDFs"
+                            }
+                        },
+                        "required": ["name", "folder"]
+                    }
+                }
             }
+
 
         ]
     
