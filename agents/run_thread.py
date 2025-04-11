@@ -188,7 +188,8 @@ if __name__ == "__main__":
     parser.add_argument("--model", type=str, help="Model to use (gpt-4, pro, claude-2, etc.)")
     parser.add_argument("--health-check", action="store_true", help="Run a health check for the selected LLM provider/model")
     parser.add_argument("--experimental-highlight-figures", action="store_true", help="(Prototype) Attempt to explain figures/tables")
-    parser.add_argument("--explain-term", type=str, help="Explain a technical term based on the paper")
+    parser.add_argument("--explain-term", nargs="?", const="", help="Explain a term using paper context (leave blank to extract keywords)")
+
 
 
 
@@ -217,19 +218,25 @@ if __name__ == "__main__":
         exit()
     
     if args.file and args.explain_term is not None:
+        from domain.paper import Paper
+        from services.explainer import TermExplainer
 
         paper = Paper.from_pdf(args.file)
 
-        if args.explain_term.strip():  # User provided a term
+        if args.explain_term.strip():
             result = TermExplainer.explain_term(args.explain_term.strip(), paper)
             print(f"\n🧠 Explanation for '{result['term']}':\n{result['summary']}")
             print(f"🔎 Source: {result['source']}")
-        else:  # No term provided — just list keywords
+        else:
             print("📚 Top terms found in the paper:")
             keywords = TermExplainer.extract_terms(paper)
-            for i, term in enumerate(keywords, 1):
-                print(f"{i}. {term}")
+            if not keywords:
+                print("[!] No terms found — the paper might be too short or LLM failed.")
+            else:
+                for i, term in enumerate(keywords, 1):
+                    print(f"{i}. {term}")
         exit()
+
 
     
     #Experimental feature to analyze figures and tables
