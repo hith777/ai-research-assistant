@@ -4,6 +4,7 @@ from typing import Optional, List
 from tools.text_chunker import TextChunker
 from services.metadata_extractor import extract_metadata_with_llm
 from utils.token_counter import TokenCounter
+from infra.config import Config
 
 class Paper:
     def __init__(self, title: str, authors: list[str], source: str, raw_text: str):
@@ -22,11 +23,12 @@ class Paper:
             title = metadata.get("title", "")
             authors = metadata.get("authors", [])
         else:
-            tokenizer = TokenCounter.get_tokenizer()
-            tokens = tokenizer.encode(raw_text)
-            metadata_chunk = tokenizer.decode(tokens[:800])
+            from utils.token_counter import TokenCounter
+            from services.metadata_extractor import extract_metadata_with_llm
 
+            metadata_chunk = TokenCounter.get_token_chunk(raw_text, token_limit=800)
             metadata = extract_metadata_with_llm(metadata_chunk)
+
             title = metadata.get("title", "")
             authors = metadata.get("authors", [])
 

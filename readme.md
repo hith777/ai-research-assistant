@@ -185,3 +185,8 @@ ai-research-assistant/
 - Removed cost calculation logic from CLI — moved to service layer
 - Fully ready for UI / API consumption
 
+### Prototype Feature (Archived)
+- `highlight_figures()` – Initial attempt using PyMuPDF + LLM caption summarization
+- Status: archived for future multimodal LLM (GPT-4V, Claude 3 Opus, etc.)
+- Fails on layout inconsistencies and figure detection hallucinations
+- Code preserved in `tools/prototype_figure_analyzer.py`

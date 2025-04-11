@@ -4,7 +4,9 @@ import time
 from infra.config import Config
 from agents.agent_runner import AssistantRegistrar
 from agents.llm_client import LLMClient
-from tools.figure_analyzer import FigureAnalyzer
+#from tools.prototype_figure_analyzer import FigureAnalyzer
+from domain.paper import Paper
+from services.explainer import TermExplainer
 
 
 class ThreadExecutor:
@@ -134,6 +136,29 @@ class ThreadExecutor:
                     "tool_call_id": tool_call.id,
                     "output": result["comparison"]
                 })
+            
+            elif func_name == "explain_term":
+                from services.explainer import TermExplainer
+                from domain.paper import Paper
+
+                path = args["path"]
+                term = args.get("term")
+                style = args.get("style", "default")
+
+                paper = Paper.from_pdf(path)
+
+                if term:
+                    result = TermExplainer.explain_term(term, paper, style)
+                    output = result["summary"]
+                else:
+                    terms = TermExplainer.extract_terms(paper)
+                    output = "📚 Top terms in the paper:\n" + "\n".join(f"- {t}" for t in terms)
+
+                outputs.append({
+                    "tool_call_id": tool_call.id,
+                    "output": output
+                })
+
 
 
         openai.beta.threads.runs.submit_tool_outputs(
@@ -162,7 +187,8 @@ if __name__ == "__main__":
     parser.add_argument("--provider", type=str, help="LLM provider (openai, gemini, claude, etc.)")
     parser.add_argument("--model", type=str, help="Model to use (gpt-4, pro, claude-2, etc.)")
     parser.add_argument("--health-check", action="store_true", help="Run a health check for the selected LLM provider/model")
-    parser.add_argument("--highlight-figures", action="store_true", help="Analyze and explain figure and table references in the paper")
+    parser.add_argument("--experimental-highlight-figures", action="store_true", help="(Prototype) Attempt to explain figures/tables")
+    parser.add_argument("--explain-term", type=str, help="Explain a technical term based on the paper")
 
 
 
@@ -190,21 +216,38 @@ if __name__ == "__main__":
         print(f"\n🔧 LLM Health Check:\nProvider: {result['provider']}\nModel: {result['model']}\nStatus: {result['status']}\nMessage: {result['message']}")
         exit()
     
-    if args.file and args.highlight_figures:
+    if args.file and args.explain_term is not None:
 
-        print(f"\n🔎 Analyzing figures in: {args.file}")
-        analyzer = FigureAnalyzer(args.file)
-        explanations = analyzer.explain_figures()
+        paper = Paper.from_pdf(args.file)
 
-        if not explanations:
-            print("⚠️ No figure or table references found.")
-        else:
-            print("\n📊 Figure/Table Explanations:\n")
-            for label, explanation in explanations.items():
-                print(f"--- {label} ---")
-                print(explanation)
-                print()
+        if args.explain_term.strip():  # User provided a term
+            result = TermExplainer.explain_term(args.explain_term.strip(), paper)
+            print(f"\n🧠 Explanation for '{result['term']}':\n{result['summary']}")
+            print(f"🔎 Source: {result['source']}")
+        else:  # No term provided — just list keywords
+            print("📚 Top terms found in the paper:")
+            keywords = TermExplainer.extract_terms(paper)
+            for i, term in enumerate(keywords, 1):
+                print(f"{i}. {term}")
         exit()
+
+    
+    #Experimental feature to analyze figures and tables
+    # if args.file and args.highlight_figures:
+
+    #     print(f"\n🔎 Analyzing figures in: {args.file}")
+    #     analyzer = FigureAnalyzer(args.file)
+    #     explanations = analyzer.explain_figures()
+
+    #     if not explanations:
+    #         print("⚠️ No figure or table references found.")
+    #     else:
+    #         print("\n📊 Figure/Table Explanations:\n")
+    #         for label, explanation in explanations.items():
+    #             print(f"--- {label} ---")
+    #             print(explanation)
+    #             print()
+    #     exit()
 
 
 
