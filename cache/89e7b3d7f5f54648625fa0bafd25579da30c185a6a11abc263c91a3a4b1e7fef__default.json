@@ -1,5 +1,5 @@
 {
-  "final_summary": "This research paper analyzes common challenges faced by developers in building deep learning applications by studying 715 questions from Stack Overflow. The study identifies seven types of frequently asked questions and highlights five main root causes of these challenges, including API misuse, incorrect hyperparameter selection, GPU computation, static logic in source code, and configuration of computation units. The paper emphasizes the need for better support to address programming issues in deep learning applications and suggests further investigation into debugging and profiling machine learning systems. The study also discusses the importance of understanding common questions related to library dependencies and hardware compatibility, as well as the need for automated techniques to inspect and classify deep learning questions. Future research directions include improving tool support for debugging and profiling, as well as conducting surveys and interviews with professional engineers to adapt to evolving deep learning frameworks.",
+  "final_summary": "This paper presents an empirical study of common challenges faced by developers in building deep learning applications. The study analyzes 715 questions from Stack Overflow and identifies seven frequently asked types of questions. A classification model is built to quantify the distribution of these questions among a total of 39,628 deep learning questions. The top three most common types of questions are program crashes, model migration, and implementation issues. The study highlights five main root causes of these challenges, including API misuse, incorrect hyperparameter selection, GPU computation, and static logic in source code. Developers often seek solutions to these issues on online forums like Stack Overflow. The paper emphasizes the importance of addressing these root causes and provides insights into debugging, profiling, and performance optimization in deep learning applications. Future research directions include automated classification of API usage protocols, mining hyperparameter combinations, and improving debugging and profiling support for deep learning systems.",
   "title": "An Empirical Study of Common Challenges in Developing Deep Learning Applications",
   "authors": [
     "Tianyi Zhang",
@@ -12,9 +12,9 @@
   "source": "compressed",
   "chunks": 33,
   "total_usage": {
-    "prompt_tokens": 21949,
-    "completion_tokens": 4897,
-    "total_tokens": 26846
+    "prompt_tokens": 22511,
+    "completion_tokens": 5476,
+    "total_tokens": 27987
   },
-  "cost": 0.031743
+  "cost": 0.033463
 }

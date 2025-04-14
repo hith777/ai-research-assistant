@@ -9,46 +9,6 @@ from utils.token_counter import TokenCounter
 
 
 class SummarizerService:
-    
-    @staticmethod
-    def summarize_chunk(chunk: Optional[Chunk], style: str = "default", llm: Optional[LLMClient] = None) -> dict:
-        """
-        Summarizes a single chunk using the LLM.
-
-        Args:
-            chunk (Chunk): The text chunk to summarize.
-            style (str): The desired summary style.
-            llm (LLMClient, optional): An existing LLMClient instance.
-
-        Returns:
-            dict: {
-                "summary": str,
-                "usage": {
-                    "prompt_tokens": int,
-                    "completion_tokens": int,
-                    "total_tokens": int
-                },
-                used_compression: bool
-            }
-        """
-        if not chunk:
-            return {"summary": "", "usage": {"total_tokens": 0}}
-
-        llm = llm or LLMClient()
-        prompt = build_summary_prompt(chunk, style)
-
-        try:
-            response = llm.chat_completion(prompt)
-            return {
-                "summary": response["text"],
-                "usage": response["usage"]
-            }
-        except Exception as e:
-            print(f"[ERROR] Failed to summarize chunk: {e}")
-            return {
-                "summary": "",
-                "usage": {"total_tokens": 0}
-            }
 
     @staticmethod
     def summarize_paper(path: str, style: str = "default", llm: Optional[LLMClient] = None, provider: Optional[str] = None, model: Optional[str] = None) -> dict:

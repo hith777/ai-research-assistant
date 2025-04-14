@@ -1,0 +1,19 @@
+{
+  "final_summary": "The research paper explores the challenges in developing production-ready systems with deep learning (DL) components through interpretive research with companies of varying sizes. It identifies 12 main challenges in development, production, and organizational aspects of building DL systems, including hidden technical debt, boundary erosion, entanglement, hidden feedback loops, undeclared consumers, data dependencies, and configuration issues. The paper highlights the need for collaboration between software engineering and DL communities to address these challenges and guide future research in leveraging the potential of DL technology. The research is based on seven example ML projects conducted in collaboration with companies from various industries, showcasing the transformative potential of DL technology in various sectors.",
+  "title": "Software Engineering Challenges of Deep Learning",
+  "authors": [
+    "Anders Arpteg",
+    "Bjo\u00a8rn Brinne",
+    "Luka Crnkovic-Friis",
+    "Jan Bosch"
+  ],
+  "style": "default",
+  "source": "compressed",
+  "chunks": 30,
+  "total_usage": {
+    "prompt_tokens": 19402,
+    "completion_tokens": 4007,
+    "total_tokens": 23409
+  },
+  "cost": 0.027416
+}

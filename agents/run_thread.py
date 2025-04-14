@@ -6,7 +6,9 @@ from agents.agent_runner import AssistantRegistrar
 from agents.llm_client import LLMClient
 #from tools.prototype_figure_analyzer import FigureAnalyzer
 from domain.paper import Paper
-from services.explainer import TermExplainer
+from services.search_service import SearchService
+from rich import print
+import sys
 
 
 class ThreadExecutor:
@@ -137,28 +139,6 @@ class ThreadExecutor:
                     "output": result["comparison"]
                 })
             
-            elif func_name == "explain_term":
-                from services.explainer import TermExplainer
-                from domain.paper import Paper
-
-                path = args["path"]
-                term = args.get("term")
-                style = args.get("style", "default")
-
-                paper = Paper.from_pdf(path)
-
-                if term:
-                    result = TermExplainer.explain_term(term, paper, style)
-                    output = result["summary"]
-                else:
-                    terms = TermExplainer.extract_terms(paper)
-                    output = "📚 Top terms in the paper:\n" + "\n".join(f"- {t}" for t in terms)
-
-                outputs.append({
-                    "tool_call_id": tool_call.id,
-                    "output": output
-                })
-            
             elif func_name == "search_by_author":
                 from services.author_search import AuthorSearch
 
@@ -206,9 +186,11 @@ if __name__ == "__main__":
     parser.add_argument("--model", type=str, help="Model to use (gpt-4, pro, claude-2, etc.)")
     parser.add_argument("--health-check", action="store_true", help="Run a health check for the selected LLM provider/model")
     parser.add_argument("--experimental-highlight-figures", action="store_true", help="(Prototype) Attempt to explain figures/tables")
-    parser.add_argument("--explain-term", nargs="?", const="", help="Explain a term using paper context (leave blank to extract keywords)")
+    #parser.add_argument("--explain-term", nargs="?", const="", help="Explain a term using paper context (leave blank to extract keywords)")
     parser.add_argument("--search-author", type=str, help="Search local PDFs for papers by this author")
     parser.add_argument("--folder", type=str, help="Folder path for searching PDFs")
+    parser.add_argument("--search-title", type=str, help="Search papers by title (local + Arxiv fallback)")
+
 
 
 
@@ -238,25 +220,18 @@ if __name__ == "__main__":
         print(f"\n🔧 LLM Health Check:\nProvider: {result['provider']}\nModel: {result['model']}\nStatus: {result['status']}\nMessage: {result['message']}")
         exit()
     
-    if args.file and args.explain_term is not None:
-        from domain.paper import Paper
-        from services.explainer import TermExplainer
+    # if args.explain_term:
+    #     term = args.explain_term.strip()
+    #     paper = Paper.from_pdf(args.file)
+        
+    #     from services.explainer import TermExplainer
+    #     result = TermExplainer.explain_term(term, paper.raw_text)
 
-        paper = Paper.from_pdf(args.file)
+    #     print(f"\n🧠 Explanation for '{term}':\n{result['explanation']}")
+    #     print(f"🔍 Source: {result['source']}")
+    #     sys.exit(0)
 
-        if args.explain_term.strip():
-            result = TermExplainer.explain_term(args.explain_term.strip(), paper)
-            print(f"\n🧠 Explanation for '{result['term']}':\n{result['summary']}")
-            print(f"🔎 Source: {result['source']}")
-        else:
-            print("📚 Top terms found in the paper:")
-            keywords = TermExplainer.extract_terms(paper)
-            if not keywords:
-                print("[!] No terms found — the paper might be too short or LLM failed.")
-            else:
-                for i, term in enumerate(keywords, 1):
-                    print(f"{i}. {term}")
-        exit()
+
 
     if args.search_author and args.folder:
         from services.author_search import AuthorSearch
@@ -273,6 +248,19 @@ if __name__ == "__main__":
                 print(f"📁 Path: {r['path']}\n")
 
         exit()
+    
+    if args.search_title:
+        results = SearchService.search_by_title(args.search_title)
+
+        if not results:
+            print(f"\n⚠️  No matching titles found for: '{args.search_title}'")
+        else:
+            print(f"\n📚 Local Matches for '{args.search_title}':\n")
+            for i, result in enumerate(results, 1):
+                print(f"[{i}] {result['title']} — {', '.join(result['authors'])}")
+                print(f"     [score: {result['score']}]  📄 {result['path']}\n")
+
+        exit(0)
 
 
     

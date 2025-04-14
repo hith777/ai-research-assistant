@@ -28,7 +28,7 @@ def extract_style_from_messages(thread_id: str, default: str = "default") -> str
     return default
 
 
-def build_summary_prompt(chunk: Optional[Chunk], style: str = "default") -> str:
+def build_summary_prompt(chunk: str, style: str = "default") -> str:
     """
     Builds a prompt to instruct the LLM to summarize a specific text chunk.
 
@@ -42,16 +42,16 @@ def build_summary_prompt(chunk: Optional[Chunk], style: str = "default") -> str:
     if not chunk:
         return ""
 
-    instruction = "Summarize the following part of a research paper clearly and concisely:"
+    instruction = "Summarize the following section of a research paper clearly and concisely:"
 
     if style == "short":
-        instruction = "Summarize this section briefly in 1-2 sentences:"
+        instruction = "Summarize the following section of a research paper briefly in 1-2 sentences:"
     elif style == "layman":
-        instruction = "Summarize this section in simple language anyone can understand:"
+        instruction = "Summarize the following section of a research paper in simple terms for a general audience:"
     elif style == "technical":
-        instruction = "Summarize this section with a focus on technical accuracy:"
+        instruction = "Summarize the following section of a research paper with focus on technical accuracy:"
 
-    return f"{instruction}\n\n{chunk.text.strip()}"
+    return f"{instruction}\n\n{chunk.strip()}"
     
 
 def build_compression_prompt(text: str) -> str:

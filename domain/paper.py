@@ -2,8 +2,9 @@ from tools.pdf_parser import PDFParser
 from domain.text_chunk import Chunk
 from typing import Optional, List
 from tools.text_chunker import TextChunker
-from services.metadata_extractor import extract_metadata_with_llm
 from tools.author_cache import AuthorCache
+from domain.paper_index import PaperIndex
+
 
 class Paper:
     def __init__(self, title: str, authors: list[str], source: str, raw_text: str):
@@ -16,7 +17,10 @@ class Paper:
     @classmethod
     def from_pdf(cls, pdf_path: str, metadata: dict = None) -> Optional["Paper"]:
         parsed_file = PDFParser.extract_info(pdf_path)
-        raw_text = parsed_file.raw_text
+        raw_text = parsed_file["raw_text"]
+        with open("cache/raw_extracted_text.txt", "w", encoding="utf-8") as f:
+            f.write(raw_text)
+
 
         if metadata:
             title = metadata.get("title", "")
@@ -33,6 +37,7 @@ class Paper:
         
         if title and authors:
             AuthorCache.add_paper(title=title, authors=authors, path=pdf_path)
+            PaperIndex.add_paper(title=title, authors=authors, path=pdf_path)
 
         return cls(title=title, authors=authors, source=pdf_path, raw_text=raw_text)
     

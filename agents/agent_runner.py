@@ -49,31 +49,31 @@ class AssistantRegistrar:
                     }
                 }
             },
-            {
-                "type": "function",
-                "function": {
-                    "name": "explain_term",
-                    "description": "Explain a technical term using the paper or fallback to general knowledge.",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "path": {
-                                "type": "string",
-                                "description": "PDF file path"
-                            },
-                            "term": {
-                                "type": "string",
-                                "description": "Term to explain from the paper"
-                            },
-                            "style": {
-                                "type": "string",
-                                "description": "Tone: default, layman, technical, short, verbose"
-                            }
-                        },
-                        "required": ["path", "term"]
-                    }
-                }
-            },
+            # {
+            #     "type": "function",
+            #     "function": {
+            #         "name": "explain_term",
+            #         "description": "Explain a technical term using the paper or fallback to general knowledge.",
+            #         "parameters": {
+            #             "type": "object",
+            #             "properties": {
+            #                 "path": {
+            #                     "type": "string",
+            #                     "description": "PDF file path"
+            #                 },
+            #                 "term": {
+            #                     "type": "string",
+            #                     "description": "Term to explain from the paper"
+            #                 },
+            #                 "style": {
+            #                     "type": "string",
+            #                     "description": "Tone: default, layman, technical, short, verbose"
+            #                 }
+            #             },
+            #             "required": ["path", "term"]
+            #         }
+            #     }
+            # },
             {
                 "type": "function",
                 "function": {

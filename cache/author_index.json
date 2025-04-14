@@ -1,0 +1,68 @@
+{
+  "ryan marinelli": [
+    {
+      "title": "Responsible Development of Offensive AI",
+      "path": "docs/sample_test_paper.pdf"
+    }
+  ],
+  "tianyi zhang": [
+    {
+      "title": "An Empirical Study of Common Challenges in Developing Deep Learning Applications",
+      "path": "docs/paper1.pdf"
+    }
+  ],
+  "cuiyun gao": [
+    {
+      "title": "An Empirical Study of Common Challenges in Developing Deep Learning Applications",
+      "path": "docs/paper1.pdf"
+    }
+  ],
+  "lei ma": [
+    {
+      "title": "An Empirical Study of Common Challenges in Developing Deep Learning Applications",
+      "path": "docs/paper1.pdf"
+    }
+  ],
+  "michael r. lyu": [
+    {
+      "title": "An Empirical Study of Common Challenges in Developing Deep Learning Applications",
+      "path": "docs/paper1.pdf"
+    }
+  ],
+  "miryung kim": [
+    {
+      "title": "An Empirical Study of Common Challenges in Developing Deep Learning Applications",
+      "path": "docs/paper1.pdf"
+    }
+  ],
+  "anders arpteg": [
+    {
+      "title": "Software Engineering Challenges of Deep Learning",
+      "path": "docs/paper2.pdf"
+    }
+  ],
+  "bjorn brinne": [
+    {
+      "title": "Software Engineering Challenges of Deep Learning",
+      "path": "docs/paper2.pdf"
+    }
+  ],
+  "luka crnkovic-friis": [
+    {
+      "title": "Software Engineering Challenges of Deep Learning",
+      "path": "docs/paper2.pdf"
+    }
+  ],
+  "jan bosch": [
+    {
+      "title": "Software Engineering Challenges of Deep Learning",
+      "path": "docs/paper2.pdf"
+    }
+  ],
+  "bjo\u00a8rn brinne": [
+    {
+      "title": "Software Engineering Challenges of Deep Learning",
+      "path": "docs/paper2.pdf"
+    }
+  ]
+}

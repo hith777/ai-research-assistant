@@ -46,10 +46,15 @@ class TokenCounter:
         return 4096  # default
     
     @staticmethod
-    def get_token_chunk(text: str, token_limit: int = 800, model: str = None) -> str:
+    def get_token_chunk(text: str, token_limit: int = 2500, model: str = None) -> str:
         """
-        Returns a decoded string from the first N tokens of text,
-        using the appropriate tokenizer based on model/provider.
+        Returns a decoded string from the first N tokens of the text,
+        using the appropriate tokenizer if available.
+
+        Args:
+            text (str): Full input text.
+            token_limit (int): Max number of tokens to extract.
+            model (str, optional): LLM model name. Defaults to config.
         """
         provider = Config.LLM_PROVIDER.lower()
         model = model or Config.OPENAI_MODEL
@@ -61,8 +66,9 @@ class TokenCounter:
                 tokens = encoding.encode(text)
                 return encoding.decode(tokens[:token_limit])
             except Exception as e:
-                print(f"[WARN] Token chunk fallback due to error: {e}")
+                print(f"[WARN] OpenAI token chunk fallback: {e}")
                 return " ".join(text.split()[:token_limit])
 
-        # Default fallback (not token-accurate)
+        # Fallback for Claude, Gemini, etc. — rough estimate
         return " ".join(text.split()[:token_limit])
+

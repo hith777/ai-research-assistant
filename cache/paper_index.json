@@ -1,0 +1,23 @@
+[
+  {
+    "title": "An Empirical Study of Common Challenges in Developing Deep Learning Applications",
+    "authors": [
+      "Tianyi Zhang",
+      "Cuiyun Gao",
+      "Lei Ma",
+      "Michael R. Lyu",
+      "Miryung Kim"
+    ],
+    "path": "docs/paper1.pdf"
+  },
+  {
+    "title": "Software Engineering Challenges of Deep Learning",
+    "authors": [
+      "Anders Arpteg",
+      "Bjo\u00a8rn Brinne",
+      "Luka Crnkovic-Friis",
+      "Jan Bosch"
+    ],
+    "path": "docs/paper2.pdf"
+  }
+]
