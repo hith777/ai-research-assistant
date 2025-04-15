@@ -50,6 +50,12 @@ DEBUG_MODE=true
 
 ## How to Use
 
+### Streamlit App (New in v0.6.0)
+```bash
+PYTHONPATH=. streamlit run streamlit_app/app.py
+```
+Navigate to http://localhost:8501 and interact with the assistant through a clean web UI.
+
 ### CLI Summarization
 
 ```bash
@@ -245,3 +251,11 @@ ai-research-assistant/
 - CLI supports `--search-author "Name"` with `--folder "path/to/folder"`
 - Author cache stored in `cache/author_index.json` to avoid duplicate processing
 - Agent tool: `search_by_author(name, folder)` registered and enabled
+
+### v0.6.0
+- Summarize research papers
+- Compare two papers
+- Streamlit UI
+- Token & cost tracking
+- Paper metadata extraction
+- In progress: Term explainer, figure detection, arXiv/Scholar fetcher
